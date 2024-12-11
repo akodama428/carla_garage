@@ -409,109 +409,192 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
 
     return result
 
-  @torch.inference_mode()  # Turns off gradient computation
-  def run_step(self, input_data, timestamp, sensors=None):  # pylint: disable=locally-disabled, unused-argument
-    self.step += 1
+  @torch.inference_mode()  # 勾配計算を無効化
+  def run_step(self, input_data, timestamp, sensors=None):
+    """
+    シミュレーションの1ステップを実行し、車両の制御信号を返す。
+    """
+    self.step += 1  # ステップカウンタを増加
 
+
+    # === 初期化処理 ===
     if not self.initialized:
-      self._init()
-      control = carla.VehicleControl(steer=0.0, throttle=0.0, brake=1.0)
-      self.control = control
-      tick_data = self.tick(input_data)
-      if self.config.backbone not in ('aim'):
-        self.lidar_last = deepcopy(tick_data['lidar'])
+      control = self._initialize_control(input_data)
       return control
 
-    # Need to run this every step for GPS filtering
+    # === 毎ステップ実行処理 ===
     tick_data = self.tick(input_data)
 
+    # LiDARデータのインデックスを計算
     lidar_indices = []
     for i in range(self.config.lidar_seq_len):
       lidar_indices.append(i * self.config.data_save_freq)
 
-    #Current position of the car
-    ego_x = self.state_log[-1][0]
-    ego_y = self.state_log[-1][1]
-    ego_theta = self.state_log[-1][2]
+    # 現在と直前の車両位置を取得
+    ego_pose = self._get_current_and_previous_pose()
 
-    ego_x_last = self.state_log[-2][0]
-    ego_y_last = self.state_log[-2][1]
-    ego_theta_last = self.state_log[-2][2]
+    # LiDAR処理
+    lidar_bev = self._process_lidar(tick_data, ego_pose, lidar_indices)
+    if lidar_bev is None:
+        # バッファが不足している場合は、ブレーキを適用して終了
+        control = carla.VehicleControl(steer=0.0, throttle=0.0, brake=1.0)
+        self.control = control
+        return control
 
-    # We only get half a LiDAR at every time step. Aligns the last half into the current coordinate frame.
-    if self.config.backbone not in ('aim'):
-      lidar_last = self.align_lidar(self.lidar_last, ego_x_last, ego_y_last, ego_theta_last, ego_x, ego_y, ego_theta)
-
-    # Updates stop boxes by vehicle movement converting past predictions into the current frame.
-    if self.stop_sign_controller:
-      self.update_stop_box(self.stop_sign_buffer, ego_x_last, ego_y_last, ego_theta_last, ego_x, ego_y, ego_theta)
-
-    if self.config.backbone not in ('aim'):
-      lidar_current = deepcopy(tick_data['lidar'])
-      lidar_full = np.concatenate((lidar_current, lidar_last), axis=0)
-
-      self.lidar_buffer.append(lidar_full)
-
-    if self.config.backbone not in ('aim'):
-      # We wait until we have sufficient LiDARs
-      if len(self.lidar_buffer) < (self.config.lidar_seq_len * self.config.data_save_freq):
-        self.lidar_last = deepcopy(tick_data['lidar'])
-        tmp_control = carla.VehicleControl(0.0, 0.0, 1.0)
-        self.control = tmp_control
-
-        return tmp_control
-
-    if self.config.backbone in ('aim'):  # Image only method
-      # Dummy data
-      lidar_bev = torch.zeros((1, 1 + int(self.config.use_ground_plane), self.config.lidar_resolution_height,
-                               self.config.lidar_resolution_width)).to(self.device, dtype=torch.float32)
-    else:
-      # Voxelize LiDAR and stack temporal frames
-      lidar_bev = []
-      # prepare LiDAR input
-      for i in lidar_indices:
-        lidar_point_cloud = deepcopy(self.lidar_buffer[-(i + 1)])
-
-        # For single frame there is no point in realignment. The state_log index will also differ.
-        if self.config.realign_lidar and self.config.lidar_seq_len > 1:
-          # Position of the car when the LiDAR was collected
-          curr_x = self.state_log[i][0]
-          curr_y = self.state_log[i][1]
-          curr_theta = self.state_log[i][2]
-
-          # Voxelize to BEV for NN to process
-          lidar_point_cloud = self.align_lidar(lidar_point_cloud, curr_x, curr_y, curr_theta, ego_x, ego_y, ego_theta)
-
-        lidar_histogram = self.data.lidar_to_histogram_features(lidar_point_cloud,
-                                                                use_ground_plane=self.config.use_ground_plane)
-
-        lidar_histogram = torch.from_numpy(lidar_histogram).unsqueeze(0).to(self.device, dtype=torch.float32)
-        lidar_bev.append(lidar_histogram)
-
-        lidar_bev = torch.cat(lidar_bev, dim=1)
-
-    if self.config.backbone not in ('aim'):
-      self.lidar_last = deepcopy(tick_data['lidar'])
-
-    # prepare velocity input
+    # 車両の速度情報を取得
     gt_velocity = tick_data['speed']
     velocity = gt_velocity.reshape(1, 1)  # used by transfuser
 
-    compute_debug_output = self.config.debug and (self.save_path is not None)
-
-    # new checkpoint lookahead: calculate which checkpoint to use for control
+    # === 移動距離の更新（速度に基づく計算） ===
     speed = gt_velocity.item()
-
     if self.stop_after_meter > 0:
       dt = self.config.carla_frame_rate
-      self.meters_travelled = self.meters_travelled + speed * dt
+      self.meters_travelled += speed * dt
 
-    # forward pass
+    # === モデルによる予測処理 ===
+    model_outputs = self._run_model_prediction(tick_data, lidar_bev, velocity)
+
+    # 結果の集約と処理
+    bbs_vehicle_coordinate_system = self._process_bounding_boxes(
+      model_outputs['bounding_boxes'],
+      model_outputs['compute_debug_output']
+    )
+
+    self._handle_stop_signs(gt_velocity)
+    self._handle_attention_weights(model_outputs['attention_weights'])
+    self._aggregate_waypoints(model_outputs['pred_wps'])
+
+    # モデル予測から目標速度スカラーを計算する
+    pred_target_speed_scalar = self._calculate_target_speed(model_outputs['pred_target_speeds'])
+
+    # 結果の可視化（デバッグ用）
+    if model_outputs['compute_debug_output']:
+      self._visualize_model_outputs(
+        model_outputs,
+        tick_data,
+        lidar_bev,
+        pred_target_speed_scalar,
+        bbs_vehicle_coordinate_system
+      )
+
+    # 制御信号を計算
+    control = self._calculate_control_signal(
+      model_outputs['pred_checkpoints'],
+      pred_target_speed_scalar,
+      gt_velocity
+    )
+
+    # 車両が停止した場合のリカバリ処理
+    control = self._handle_stuck_vehicle(control, gt_velocity)
+
+    # 停止サインと移動距離の制限処理
+    control = self._apply_stop_conditions(control)
+
+    # ベンチマークデータの収集
+    self._process_benchmark_metrics()
+
+    # 制御信号を更新
+    self.control = self._update_control(control)
+
+    return control
+
+  def _initialize_control(self, input_data):
+    """初期化ステップ。制御信号をブレーキに設定し、LiDARの初期データを保存。"""
+    self._init()
+    control = carla.VehicleControl(steer=0.0, throttle=0.0, brake=1.0)
+    self.control = control
+    tick_data = self.tick(input_data)
+    if self.config.backbone not in ('aim'):
+      self.lidar_last = deepcopy(tick_data['lidar'])
+    return control
+
+  def _get_current_and_previous_pose(self):
+    """現在と直前の車両位置を取得。"""
+    return {
+        'current': self.state_log[-1][:3],
+        'last': self.state_log[-2][:3]
+    }
+
+  def _process_lidar(self, tick_data, ego_pose, lidar_indices):
+    """
+    LiDARデータを処理し、BEV形式に変換。
+    """
+    if self.config.backbone not in ('aim'):
+      # LiDARデータの整列（半フレームを現在座標系に変換）
+      lidar_last = self.align_lidar(
+        self.lidar_last,
+        *ego_pose['last'],  # 直前の車両位置
+        *ego_pose['current']  # 現在の車両位置
+      )
+
+    # 停止サインの更新
+    if self.stop_sign_controller:
+      self.update_stop_box(
+        self.stop_sign_buffer,
+        *ego_pose['last'],  # 直前の位置
+        *ego_pose['current']  # 現在の位置
+      )
+
+    if self.config.backbone not in ('aim'):
+      # 現在のLiDARデータをバッファに保存
+      lidar_current = deepcopy(tick_data['lidar'])
+      lidar_full = np.concatenate((lidar_current, lidar_last), axis=0)
+      self.lidar_buffer.append(lidar_full)
+
+      # バッファが不足している場合、Noneを返す
+      if len(self.lidar_buffer) < (self.config.lidar_seq_len * self.config.data_save_freq):
+        self.lidar_last = deepcopy(tick_data['lidar'])
+        return None
+
+    # BEVデータを準備
+    if self.config.backbone in ('aim'):
+      # Dummyデータを生成
+      return torch.zeros(
+        (1, 1 + int(self.config.use_ground_plane), self.config.lidar_resolution_height,
+         self.config.lidar_resolution_width)).to(self.device, dtype=torch.float32)
+    else:
+      # LiDARデータをボクセル化し、時系列をスタック
+      lidar_bev = []
+      for i in lidar_indices:
+        lidar_point_cloud = deepcopy(self.lidar_buffer[-(i + 1)])
+        if self.config.realign_lidar and self.config.lidar_seq_len > 1:
+          # LiDARの時系列データを整列
+          lidar_point_cloud = self.align_lidar(
+            lidar_point_cloud,
+            *self.state_log[i],  # LiDARが収集されたときの車両位置
+            *ego_pose['current']  # 現在の車両位置
+          )
+        lidar_histogram = self.data.lidar_to_histogram_features(lidar_point_cloud,
+                                                                use_ground_plane=self.config.use_ground_plane)
+        lidar_histogram = torch.from_numpy(lidar_histogram).unsqueeze(0).to(self.device, dtype=torch.float32)
+        lidar_bev.append(lidar_histogram)
+
+        self.lidar_last = deepcopy(tick_data['lidar'])
+
+      return torch.cat(lidar_bev, dim=1)
+
+
+  def _run_model_prediction(self, tick_data, lidar_bev, velocity):
+    """
+    モデルを用いて予測を実行し、結果を集約して返す。
+  
+    Args:
+      tick_data: 現在のステップの入力データ。
+      lidar_bev: LiDARから生成されたBEVデータ。
+      velocity: 車両の速度情報。
+  
+    Returns:
+      モデルの予測結果（ウェイポイント、目標速度、チェックポイントなど）。
+    """
     pred_wps = []
     pred_target_speeds = []
     pred_checkpoints = []
     bounding_boxes = []
-    wp_selected = None
+    wp_selected = None  # 初期化
+  
+    # デバッグ出力を有効にするか確認
+    compute_debug_output = self.config.debug and (self.save_path is not None)
+  
     for i in range(self.model_count):
       if self.config.backbone in ('transFuser', 'aim', 'bev_encoder'):
         pred_wp, \
@@ -530,15 +613,16 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
           target_point_next=tick_data['target_point_next'] if self.config.two_tp_input else None,
           ego_vel=velocity,
           command=tick_data['command'])
-        # Only convert bounding boxes when they are used.
-        if self.config.detect_boxes and (compute_debug_output or self.config.backbone in ('aim') or
-                                         self.stop_sign_controller):
+  
+        # バウンディングボックスの予測を処理
+        if self.config.detect_boxes and (compute_debug_output or self.config.backbone in ('aim') or self.stop_sign_controller):
           pred_bounding_box = self.nets[i].convert_features_to_bb_metric(pred_bb_features)
         else:
           pred_bounding_box = None
       else:
         raise ValueError('The chosen vision backbone does not exist. The options are: transFuser, aim, bev_encoder')
-
+  
+      # ウェイポイントを選択（複数の出力がある場合に対応）
       if self.config.use_wp_gru:
         if self.config.multi_wp_output:
           wp_selected = 0
@@ -549,32 +633,84 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
             pred_wps.append(pred_wp)
         else:
           pred_wps.append(pred_wp)
+
+      # 目標速度とチェックポイントを記録
       if self.config.use_controller_input_prediction:
         pred_target_speeds.append(F.softmax(pred_target_speed[0], dim=0))
         pred_checkpoints.append(pred_checkpoint[0])
 
       bounding_boxes.append(pred_bounding_box)
+  
+    return {
+      'pred_wp_raw': pred_wp,
+      'pred_wp_1': pred_wp_1,
+      'pred_wps': pred_wps,
+      'pred_target_speed_raw': pred_target_speed,
+      'pred_target_speeds': pred_target_speeds,
+      'pred_checkpoint_raw': pred_checkpoint,
+      'pred_checkpoints': pred_checkpoints,
+      'bounding_boxes': bounding_boxes,
+      'attention_weights': attention_weights if self.config.tp_attention else None,
+      'wp_selected': wp_selected,
+      'compute_debug_output': compute_debug_output
+    }
 
-    # Average the predictions from ensembles
+  def _process_bounding_boxes(self, bounding_boxes, compute_debug_output):
+    """
+    モデルによるバウンディングボックスの予測を処理。
+  
+    Args:
+      bounding_boxes: モデル出力のバウンディングボックス。
+      compute_debug_output: デバッグ出力を有効にするかのフラグ。
+  
+    Returns:
+      処理されたバウンディングボックス。
+    """
     if self.config.detect_boxes and (compute_debug_output or self.config.backbone in ('aim') or
                                      self.stop_sign_controller):
-      # We average bounding boxes by using non-maximum suppression on the set of all detected boxes.
+      # 検出されたすべてのボックスのセットに対して非最大抑制を使用して、境界ボックスを平均化
       bbs_vehicle_coordinate_system = t_u.non_maximum_suppression(bounding_boxes, self.config.iou_treshold_nms)
-
       self.bb_buffer.append(bbs_vehicle_coordinate_system)
-    else:
-      bbs_vehicle_coordinate_system = None
+      return bbs_vehicle_coordinate_system
+    return None
 
+  def _handle_stop_signs(self, gt_velocity):
+    """
+    停止サインに関連する処理を実行。
+    """
     if self.stop_sign_controller:
-      stop_for_stop_sign = self.stop_sign_controller_step(gt_velocity.item())
+      self.stop_sign_controller_step(gt_velocity.item())
 
-    if self.config.tp_attention:
+  def _handle_attention_weights(self, attention_weights):
+    """
+    アテンションウェイトを処理し、バッファに保存。
+
+    Args:
+      attention_weights: モデル出力のアテンションウェイト。
+    """
+    if self.config.tp_attention and attention_weights:
       self.tp_attention_buffer.append(attention_weights[2])
 
+  def _aggregate_waypoints(self, pred_wps):
+    """
+    モデル出力のウェイポイントを集約。  
+
+    Args:
+      pred_wps: モデルによるウェイポイントの予測結果。
+    """
     if self.config.use_wp_gru:
       self.pred_wp = torch.stack(pred_wps, dim=0).mean(dim=0)
 
-    # calculate target speed scalar from model predictions
+  def _calculate_target_speed(self, pred_target_speeds):
+    """
+    モデルによる目標速度を計算。
+
+    Args:
+      pred_target_speeds: 各モデルの目標速度予測結果。
+
+    Returns:
+      集約された目標速度スカラー。
+    """
     if self.config.use_controller_input_prediction:
       pred_target_speed_ensemble = torch.stack(pred_target_speeds,
                                                dim=0).mean(dim=0)  # average across ensemble models' prediction
@@ -582,39 +718,59 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
       if self.uncertainty_weight:
         uncertainty = pred_target_speed_ensemble.detach().cpu().numpy()
         if uncertainty[0] > self.config.brake_uncertainty_threshold:
-          pred_target_speed_scalar = self.inference_target_speeds[0]
-        else:
-          pred_target_speed_scalar = sum(uncertainty * self.inference_target_speeds)
+          return self.inference_target_speeds[0]
+        return sum(uncertainty * self.inference_target_speeds)
       else:
         pred_target_speed_index = torch.argmax(pred_target_speed_ensemble)
-        pred_target_speed_scalar = self.inference_target_speeds[pred_target_speed_index]
+        return self.inference_target_speeds[pred_target_speed_index]
 
-    # Visualize the output of the last model
-    if compute_debug_output:
-      if self.config.use_controller_input_prediction:
-        prob_target_speed = F.softmax(pred_target_speed, dim=1)
-      else:
-        prob_target_speed = pred_target_speed
+  def _visualize_model_outputs(self, model_outputs, tick_data, lidar_bev, pred_target_speed_scalar, bbs_vehicle_coordinate_system):
+    """
+    モデルの出力を可視化（デバッグ用）。
 
-      self.nets[0].visualize_model(
-          self.save_path,
-          self.step,
-          tick_data['rgb'],
-          lidar_bev,
-          tick_data['target_point'],
-          pred_wp,
-          target_point_next=tick_data['target_point_next'] if self.config.two_tp_input else None,
-          pred_semantic=pred_semantic,
-          pred_bev_semantic=pred_bev_semantic,
-          pred_depth=pred_depth,
-          pred_checkpoint=pred_checkpoint,
-          pred_speed=prob_target_speed,
-          pred_target_speed_scalar=pred_target_speed_scalar,
-          pred_bb=bbs_vehicle_coordinate_system,
-          gt_speed=gt_velocity,
-          gt_wp=pred_wp_1,
-          wp_selected=wp_selected)
+    Args:
+      model_outputs: モデルの予測結果。
+      tick_data: 入力データ。
+      lidar_bev: LiDARから生成されたBEVデータ。
+      pred_target_speed_scalar: 集約された目標速度。
+      bbs_vehicle_coordinate_system: バウンディングボックスデータ。
+    """
+    if self.config.use_controller_input_prediction:
+      prob_target_speed = F.softmax(model_outputs['pred_target_speed_raw'], dim=1)
+    else:
+      prob_target_speed = model_outputs['pred_target_speed_raw']
+    self.nets[0].visualize_model(
+        self.save_path,
+        self.step,
+        tick_data['rgb'],
+        lidar_bev,
+        tick_data['target_point'],
+        model_outputs.get('pred_wp_raw'),
+        target_point_next=tick_data['target_point_next'] if self.config.two_tp_input else None,
+        pred_semantic=model_outputs.get('pred_semantic'),
+        pred_bev_semantic=model_outputs.get('pred_bev_semantic'),
+        pred_depth=model_outputs.get('pred_depth'),
+        pred_checkpoint=model_outputs.get('pred_checkpoint_raw'),
+        pred_speed=prob_target_speed,
+        pred_target_speed_scalar=pred_target_speed_scalar,
+        pred_bb=bbs_vehicle_coordinate_system,
+        gt_speed=tick_data['speed'],
+        gt_wp=model_outputs.get('pred_wp_1'),
+        wp_selected=model_outputs.get('wp_selected')
+    )
 
+  def _calculate_control_signal(self, pred_checkpoints, pred_target_speed_scalar, gt_velocity):
+    """
+    制御信号を計算。
+
+    Args:
+      pred_checkpoints: モデル出力のチェックポイント予測。
+      pred_target_speed_scalar: 目標速度スカラー。
+      gt_velocity: 現在の車両速度。
+
+    Returns:
+      CARLAの制御信号オブジェクト。
+    """
     if self.config.inference_direct_controller and self.config.use_controller_input_prediction:
       pred_checkpoints = torch.stack(pred_checkpoints, dim=0).mean(dim=0).detach().cpu().numpy()
       steer, throttle, brake = self.nets[0].control_pid_direct(pred_checkpoints, pred_target_speed_scalar, gt_velocity)
@@ -625,74 +781,118 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
     else:
       raise ValueError('An output representation was chosen that was not trained.')
 
-    # 0.1 is just an arbitrary low number to threshold when the car is stopped
+    return carla.VehicleControl(steer=float(steer), throttle=float(throttle), brake=float(brake))
+
+  def _handle_stuck_vehicle(self, control, gt_velocity):
+    """
+    車両が停止している場合にリカバリ処理を実行。
+  
+    Args:
+      control: 現在の制御信号。
+      gt_velocity: 現在の車両速度。
+  
+    Returns:
+      更新された制御信号。
+    """
     if gt_velocity < 0.1:
+      # 車両が停止している場合にカウンタを増加
       self.stuck_detector += 1
     else:
+      # 車両が動いている場合にカウンタをリセット
       self.stuck_detector = 0
-
-    # Restart mechanism in case the car got stuck. Not used a lot anymore but doesn't hurt to keep it.
+  
+    # 車両が長時間停止している場合の処理
     if self.stuck_detector > self.config.stuck_threshold:
       self.force_move = self.config.creep_duration
-
+  
+    # 強制移動処理
     if self.force_move > 0:
       emergency_stop = False
       if self.config.backbone not in ('aim'):
-        # safety check
+        # 安全チェック
         safety_box = deepcopy(self.lidar_buffer[-1])
-
-        # z-axis
+  
+        # z軸方向の制限
         safety_box = safety_box[safety_box[..., 2] > self.config.safety_box_z_min]
         safety_box = safety_box[safety_box[..., 2] < self.config.safety_box_z_max]
-
-        # y-axis
+  
+        # y軸方向の制限
         safety_box = safety_box[safety_box[..., 1] > self.config.safety_box_y_min]
         safety_box = safety_box[safety_box[..., 1] < self.config.safety_box_y_max]
-
-        # x-axis
+  
+        # x軸方向の制限
         safety_box = safety_box[safety_box[..., 0] > self.config.safety_box_x_min]
         safety_box = safety_box[safety_box[..., 0] < self.config.safety_box_x_max]
-        emergency_stop = (len(safety_box) > 0)  # Checks if the List is empty
-
+  
+        emergency_stop = (len(safety_box) > 0)  # 安全エリア内に物体が存在するか確認
+  
       if not emergency_stop:
         print('Detected agent being stuck. Step: ', self.step)
-        throttle = max(self.config.creep_throttle, throttle)
-        brake = False
+        control.throttle = max(self.config.creep_throttle, control.throttle)
+        control.brake = False
         self.force_move -= 1
       else:
         print('Creeping stopped by safety box. Step: ', self.step)
-        throttle = 0.0
-        brake = True
+        control.throttle = 0.0
+        control.brake = True
         self.force_move = self.config.creep_duration
+  
+    return control
 
+  def _apply_stop_conditions(self, control):
+    """
+    停止サインと移動距離制限に基づいて制御信号を更新。
+
+    Args:
+      control: 現在の制御信号。
+
+    Returns:
+      更新された制御信号。
+    """
     if self.stop_sign_controller:
+      stop_for_stop_sign = self.stop_sign_controller_step(self.control.throttle)
       if stop_for_stop_sign:
-        throttle = 0.0
-        brake = True
+        control.throttle = 0.0
+        control.brake = True
 
     if self.stop_after_meter > 0 and self.meters_travelled > self.stop_after_meter:
       print(f'Stopping after {self.stop_after_meter} meters.')
-      throttle = 0.0
-      brake = True
+      control.throttle = 0.0
+      control.brake = True
 
-    control = carla.VehicleControl(steer=float(steer), throttle=float(throttle), brake=float(brake))
+    return control
 
+    # ベンチマークデータの収集
+  def _process_benchmark_metrics(self):
+    """
+    ベンチマークデータの収集処理を実行。
+    """
     if self.IS_BENCH2DRIVE:
       # TODO doesn't seem to work
       metric_info = self.get_metric_info()
       self.metric_info[self.step] = metric_info
+
+      # メトリック情報をファイルに保存
       if self.save_path is not None and self.step % 1 == 0:
         with open(self.save_path / 'metric_info.json', 'w') as outfile:
           ujson.dump(self.metric_info, outfile, indent=4)
 
-    # CARLA will not let the car drive in the initial frames.
-    # We set the action to brake so that the filter does not get confused.
+  def _update_control(self, control):
+    """
+    制御信号を更新。
+  
+    Args:
+      control: 更新する制御信号。
+  
+    Returns:
+      最終的な制御信号。
+    """
     if self.step < self.config.inital_frames_delay:
-      self.control = carla.VehicleControl(0.0, 0.0, 1.0)
-    else:
-      self.control = control
-
+      # 初期フレームでは車両を停止させる
+      return carla.VehicleControl(steer=0.0, throttle=0.0, brake=1.0)
     return control
+
+
 
   def stop_sign_controller_step(self, ego_speed):
     """Checks whether the car is intersecting with one of the detected stop signs"""

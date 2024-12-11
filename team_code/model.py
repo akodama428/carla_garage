@@ -282,10 +282,28 @@ class LidarCenterNet(nn.Module):
       nn.init.uniform_(self.tp_pos_embed)
 
   def forward(self, rgb, lidar_bev, target_point, ego_vel, command, target_point_next=None):
+    """
+    Forward処理: 特徴抽出、融合、および各種予測を行う。
+
+    Args:
+        rgb: RGBカメラ入力。
+        lidar_bev: LiDARのBEV入力。
+        target_point: 現在のターゲットポイント。
+        ego_vel: 自車両の速度。
+        command: 離散コマンド入力。
+        target_point_next: (オプション) 次のターゲットポイント。
+    Returns:
+        ウェイポイント、目標速度、チェックポイント、補助タスク、注意重みなどの予測結果。
+    """
+    # バッチサイズを取得
     bs = rgb.shape[0]
+
+    # two_tp_inputが有効な場合、ターゲットポイントを統合
     if self.config.two_tp_input:
       target_point = torch.cat((target_point, target_point_next), axis=1)
 
+    # === 特徴抽出 ===
+    # 選択されたバックボーンに基づいて特徴を抽出
     if self.config.backbone == 'transFuser':
       bev_feature_grid, fused_features, image_feature_grid = self.backbone(rgb, lidar_bev)
     elif self.config.backbone == 'aim':
@@ -293,77 +311,78 @@ class LidarCenterNet(nn.Module):
     elif self.config.backbone == 'bev_encoder':
       bev_feature_grid, fused_features, image_feature_grid = self.backbone(rgb, lidar_bev)
     else:
-      raise ValueError('The chosen vision backbone does not exist. '
-                       'The options are: transFuser, aim, bev_encoder')
+      raise ValueError('選択されたバックボーンが存在しません。使用可能なオプション: transFuser, aim, bev_encoder')
 
-    pred_wp = None
-    pred_target_speed = None
-    pred_checkpoint = None
-    attention_weights = None
-    pred_wp_1 = None
-    selected_path = None
+    # 予測結果のプレースホルダを初期化
+    pred_wp, pred_target_speed, pred_checkpoint = None, None, None
+    attention_weights, pred_wp_1, selected_path = None, None, None
 
+    # === 主な予測タスク ===
     if self.config.use_wp_gru or self.config.use_controller_input_prediction:
+      # Transformer Decoder用の特徴処理
       if self.config.transformer_decoder_join:
+        # 位置エンコーディングを追加して特徴をフラット化
         fused_features = self.change_channel(fused_features)
         fused_features = fused_features + self.encoder_pos_encoding(fused_features)
         fused_features = torch.flatten(fused_features, start_dim=2)
         if self.config.tp_attention:
           num_pixel_tokens = fused_features.shape[2]
 
-      # Concatenate extra sensor information
+      # 追加センサ情報が設定されている場合、それを追加
       if self.extra_sensors:
         extra_sensors = []
         if self.config.use_velocity:
-          extra_sensors.append(self.velocity_normalization(ego_vel))
+          extra_sensors.append(self.velocity_normalization(ego_vel))  # 速度を正規化
         if self.config.use_discrete_command:
-          extra_sensors.append(command)
+          extra_sensors.append(command)  # コマンド入力を追加
         extra_sensors = torch.cat(extra_sensors, axis=1)
         extra_sensors = self.extra_sensor_encoder(extra_sensors)
 
+        # 統合された特徴と追加センサ情報を結合
         if self.config.transformer_decoder_join:
           extra_sensors = extra_sensors + self.extra_sensor_pos_embed.repeat(bs, 1)
           fused_features = torch.cat((fused_features, extra_sensors.unsqueeze(2)), axis=2)
         else:
           fused_features = torch.cat((fused_features, extra_sensors), axis=1)
 
+      # === ウェイポイント予測 ===
       if self.config.transformer_decoder_join:
-        fused_features = torch.permute(fused_features, (0, 2, 1))
+        fused_features = torch.permute(fused_features, (0, 2, 1))  # 次元の順序を変更
         if self.config.use_wp_gru:
           if self.config.multi_wp_output:
-            joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)
+            # 複数のウェイポイントを予測
+            joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)   # self.joinがTransformerDecoder
             num_wp = (self.config.pred_len // self.config.wp_dilation)
             pred_wp = self.wp_decoder(joined_wp_features[:, :num_wp], target_point)
             pred_wp_1 = self.wp_decoder_1(joined_wp_features[:, num_wp:2 * num_wp], target_point)
             selected_path = self.select_wps(joined_wp_features[:, 2 * num_wp])
           else:
-            if self.config.tp_attention:  # self.join will return a tuple, but we don't need the attention values here
+            # 単一のウェイポイントを予測
+            if self.config.tp_attention:
               joined_wp_features, _ = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)
             else:
               joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)
             pred_wp = self.wp_decoder(joined_wp_features, target_point)
+
+        # === 目標速度予測 ===
         if self.config.use_controller_input_prediction:
           if self.config.tp_attention:
-            tp_token = self.tp_encoder(target_point)
-            tp_token = tp_token + self.tp_pos_embed
+            tp_token = self.tp_encoder(target_point) + self.tp_pos_embed
             fused_features = torch.cat((fused_features, tp_token.unsqueeze(1)), axis=1)
-            joined_checkpoint_features, attention = self.join(self.checkpoint_query.repeat(bs, 1, 1), fused_features)
+            joined_checkpoint_features, attention = self.join(self.checkpoint_query.repeat(bs, 1, 1), fused_features)  # self.joinがTransformerDecoder
             gru_attention = attention[:, :self.config.predict_checkpoint_len]
-            # Average attention for the WP tokens
             gru_attention = torch.mean(gru_attention, dim=1)[0]
             vision_attention = torch.sum(gru_attention[:num_pixel_tokens])
-            add = 0
-            if self.extra_sensors:
-              add = 1
-              speed_attention = gru_attention[num_pixel_tokens:num_pixel_tokens + add]
+            add = 1 if self.extra_sensors else 0
+            speed_attention = gru_attention[num_pixel_tokens:num_pixel_tokens + add]
             tp_attention = gru_attention[num_pixel_tokens + add:]
             attention_weights = [vision_attention.item(), speed_attention.item(), tp_attention.item()]
           else:
             joined_checkpoint_features = self.join(self.checkpoint_query.repeat(bs, 1, 1), fused_features)
 
+          # チェックポイントと目標速度をデコード
           gru_features = joined_checkpoint_features[:, :self.config.predict_checkpoint_len]
           target_speed_features = joined_checkpoint_features[:, self.config.predict_checkpoint_len]
-
           pred_checkpoint = self.checkpoint_decoder(gru_features, target_point)
           if self.config.input_path_to_target_speed_network:
             ts_input = torch.cat(
@@ -371,8 +390,8 @@ class LidarCenterNet(nn.Module):
             pred_target_speed = self.target_speed_network(ts_input)
           else:
             pred_target_speed = self.target_speed_network(target_speed_features)
-
       else:
+        # transformer_decoder_joinが無効な場合のフォールバック
         joined_features = self.join(fused_features)
         gru_features = joined_features
         target_speed_features = joined_features[:, :self.config.gru_hidden_size]
@@ -388,28 +407,30 @@ class LidarCenterNet(nn.Module):
           else:
             pred_target_speed = self.target_speed_network(target_speed_features)
 
-    # Auxiliary tasks
-    pred_semantic = None
+    # === 補助タスク ===
+    pred_semantic, pred_depth, pred_bev_semantic, pred_bounding_box = None, None, None, None
+
     if self.config.use_semantic:
+      # セマンティックセグメンテーション予測
       pred_semantic = self.semantic_decoder(image_feature_grid)
 
-    pred_depth = None
     if self.config.use_depth:
+      # 深度予測
       pred_depth = self.depth_decoder(image_feature_grid)
       pred_depth = torch.sigmoid(pred_depth).squeeze(1)
 
-    pred_bev_semantic = None
     if self.config.use_bev_semantic:
+      # BEVセマンティックセグメンテーション
       pred_bev_semantic = self.bev_semantic_decoder(bev_feature_grid)
-      # Mask invisible pixels. They will be ignored in the loss
-      pred_bev_semantic = pred_bev_semantic * self.valid_bev_pixels
+      pred_bev_semantic = pred_bev_semantic * self.valid_bev_pixels  # 視認できないピクセルをマスク
 
-    pred_bounding_box = None
     if self.config.detect_boxes:
+      # バウンディングボックス予測
       pred_bounding_box = self.head(bev_feature_grid)
 
+    # 予測結果を返す
     return pred_wp, pred_target_speed, pred_checkpoint, pred_semantic, pred_bev_semantic, pred_depth, \
-      pred_bounding_box, attention_weights, pred_wp_1, selected_path
+           pred_bounding_box, attention_weights, pred_wp_1, selected_path
 
   def compute_loss(self, pred_wp, pred_target_speed, pred_checkpoint, pred_semantic, pred_bev_semantic, pred_depth,
                    pred_bounding_box, pred_wp_1, selected_path, waypoint_label, target_speed_label, checkpoint_label,
