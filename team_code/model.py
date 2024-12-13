@@ -373,8 +373,11 @@ class LidarCenterNet(nn.Module):
             gru_attention = attention[:, :self.config.predict_checkpoint_len]
             gru_attention = torch.mean(gru_attention, dim=1)[0]
             vision_attention = torch.sum(gru_attention[:num_pixel_tokens])
-            add = 1 if self.extra_sensors else 0
-            speed_attention = gru_attention[num_pixel_tokens:num_pixel_tokens + add]
+            add = 0
+            if self.extra_sensors:
+              add = 1
+              speed_attention = gru_attention[num_pixel_tokens:num_pixel_tokens + add]
+
             tp_attention = gru_attention[num_pixel_tokens + add:]
             attention_weights = [vision_attention.item(), speed_attention.item(), tp_attention.item()]
           else:

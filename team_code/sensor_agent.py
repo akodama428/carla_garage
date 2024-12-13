@@ -477,12 +477,14 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
         bbs_vehicle_coordinate_system
       )
 
-    # 制御信号を計算
-    control = self._calculate_control_signal(
-      model_outputs['pred_checkpoints'],
-      pred_target_speed_scalar,
-      gt_velocity
-    )
+      # 制御信号を計算
+      control = self._calculate_control_signal(
+        model_outputs['pred_checkpoints'],
+        pred_target_speed_scalar,
+        gt_velocity
+      )
+    else:
+      raise ValueError('An output representation was chosen that was not trained.')
 
     # 車両が停止した場合のリカバリ処理
     control = self._handle_stuck_vehicle(control, gt_velocity)
@@ -649,6 +651,9 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
       'pred_target_speeds': pred_target_speeds,
       'pred_checkpoint_raw': pred_checkpoint,
       'pred_checkpoints': pred_checkpoints,
+      'pred_semantic': pred_semantic,
+      'pred_bev_semantic': pred_bev_semantic,
+      'pred_depth': pred_depth,
       'bounding_boxes': bounding_boxes,
       'attention_weights': attention_weights if self.config.tp_attention else None,
       'wp_selected': wp_selected,
