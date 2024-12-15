@@ -498,7 +498,7 @@ class GlobalConfig:
         self.augment = 1  # Whether to use rotation and translation augmentation
 
         # Whether the model in and outputs will be visualized and saved into SAVE_PATH
-        self.debug = False
+        self.debug = True
 
         # -----------------------------------------------------------------------------
         # Logger

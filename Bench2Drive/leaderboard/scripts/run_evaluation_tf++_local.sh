@@ -1,18 +1,19 @@
-export CARLA_ROOT=/home/jaeger/ordnung/internal/carla_9_15
-export WORK_DIR=/home/jaeger/ordnung/internal/garage_2_cleanup/Bench2Drive
+export CARLA_ROOT=/home/atsushi/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20
+export WORK_DIR=/home/atsushi/carla_garage/Bench2Drive
 export SCENARIO_RUNNER_ROOT=${WORK_DIR}/scenario_runner
 export LEADERBOARD_ROOT=${WORK_DIR}/leaderboard
-export PYTHONPATH=$PYTHONPATH:/home/jaeger/ordnung/internal/garage_2_cleanup/team_code
+export PYTHONPATH=$PYTHONPATH:/home/atsushi/carla_garage/team_code
 export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}":${PYTHONPATH}
 
 #!/bin/bash
-BASE_PORT=30000
-BASE_TM_PORT=50000
+BASE_PORT=2000
+BASE_TM_PORT=8000
 IS_BENCH2DRIVE=True
 BASE_ROUTES=${WORK_DIR}/leaderboard/data/bench2drive220
-TEAM_AGENT=/home/jaeger/ordnung/internal/garage_2_cleanup/team_code/sensor_agent.py
+TEAM_AGENT=/home/atsushi/carla_garage/team_code/sensor_agent.py
 # Must set YOUR_CKPT_PATH
-TEAM_CONFIG=/home/jaeger/ordnung/internal/garage_2_cleanup/team_code/model_ckpt/eval_model
+TEAM_CONFIG=/home/atsushi/carla_garage/team_code/pretrained_models/all_towns
+# TEAM_CONFIG=/home/atsushi/carla_garage/team_code/pretrained_models/all_towns/train_id_001
 BASE_CHECKPOINT_ENDPOINT=eval_bench2drive220
 PLANNER_TYPE=traj
 ALGO=tfpp
