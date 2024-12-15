@@ -177,10 +177,12 @@ class ScenarioManager(object):
             GameTime.on_carla_tick(timestamp)
             CarlaDataProvider.on_carla_tick()
             self.tick_count += 1
+            # print(f"tick_count : {self.tick_count }")
             self._watchdog.pause()
 
-            if self.tick_count > 4000:
-                raise TickRuntimeError("RuntimeError, tick_count > 4000")
+            if self.tick_count > 350:
+                self._running = False
+                print("running timeout!")
 
             try:
                 self._agent_watchdog.resume()
