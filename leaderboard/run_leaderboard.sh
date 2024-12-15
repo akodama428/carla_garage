@@ -23,7 +23,36 @@ export RECORD_PATH="/home/atsushi/carla_garage/logs"
 export SAVE_PATH="/home/atsushi/carla_garage/logs"
 export RESUME=0
 
-#!/bin/bash
+# Make sure any previously started Carla simulator instance is stopped
+# Sometimes calling pkill Carla only once is not enough.
+pkill Carla
+pkill Carla
+pkill Carla
+
+term() {
+  echo "Terminated Carla"
+  pkill Carla
+  pkill Carla
+  pkill Carla
+  exit 1
+}
+trap term SIGINT
+
+# Function to handle errors
+handle_error() {
+  pkill Carla
+  exit 1
+}
+
+# Set up trap to call handle_error on ERR signal
+trap 'handle_error' ERR
+
+# Start the carla server
+export CARLA_SERVER=${CARLA_ROOT}/CarlaUE4.sh
+export PORT=2000
+sh ${CARLA_SERVER} -carla-streaming-port=0 -carla-rpc-port=${PORT} &
+sleep 20 # on a fast computer this can be reduced to sth. like 6 seconds
+echo 'Port' $PORT
 
 python3 ${LEADERBOARD_ROOT}/leaderboard/leaderboard_evaluator_local.py \
 --routes=${ROUTES} \
