@@ -77,21 +77,24 @@ class CARLA_Data(Dataset):  # pylint: disable=locally-disabled, invalid-name
     for sub_root in tqdm(root, file=sys.stdout, disable=rank != 0):
 
       # list subdirectories in root
+      print(f"sub_root: {sub_root}")
       routes = next(os.walk(sub_root))[1]
+      print(f"routes: {routes}")
 
       for route in routes:  # loop over individual routes within this scenario folder
-        repetition = int(re.search('_Rep(\\d+)', route).group(1))
-        if repetition >= self.config.num_repetitions:
-          continue
+        # repetition = int(re.search('_Rep(\\d+)', route).group(1))
+        # if repetition >= self.config.num_repetitions:
+        #   continue
 
-        town = int(re.search('Town(\\d+)', route).group(1))
-        if self.validation and (town not in self.config.val_towns):
-          continue
-        elif not self.validation and (town in self.config.val_towns):
-          continue
+        # town = int(re.search('Town(\\d+)', route).group(1))
+        # if self.validation and (town not in self.config.val_towns):
+        #   continue
+        # elif not self.validation and (town in self.config.val_towns):
+        #   continue
 
         route_dir = sub_root + '/' + route
         total_routes += 1
+        print(f"route_dir:{route_dir}")
 
         if route.startswith('FAILED_') or not os.path.isfile(route_dir + '/results.json.gz'):
           skipped_routes += 1
