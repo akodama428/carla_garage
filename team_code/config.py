@@ -640,7 +640,7 @@ class GlobalConfig:
 
     # Whether to normalize the camera image by the imagenet distribution
     self.normalize_imagenet = True
-    self.use_wp_gru = True  # Whether to use the WP output GRU.
+    self.use_wp_gru = False  # Whether to use the WP output GRU.
 
     # Semantic Segmentation
     self.use_semantic = True  # Whether to use semantic segmentation as auxiliary loss
