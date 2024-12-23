@@ -1,0 +1,1024 @@
+{
+    "_checkpoint": {
+        "global_record": {
+            "index": -1,
+            "route_id": -1,
+            "status": "Failed",
+            "infractions": {
+                "collisions_layout": 0.0,
+                "collisions_pedestrian": 0.0,
+                "collisions_vehicle": 0.0,
+                "red_light": 0.0,
+                "stop_infraction": 0.0,
+                "outside_route_lanes": 0.0,
+                "min_speed_infractions": 8.567,
+                "yield_emergency_vehicle_infractions": 0.0,
+                "scenario_timeouts": 0.0,
+                "route_dev": 0.0,
+                "vehicle_blocked": 0.0,
+                "route_timeout": 0.0
+            },
+            "scores_mean": {
+                "score_composed": 74.051795,
+                "score_route": 78.571429,
+                "score_penalty": 0.954804
+            },
+            "scores_std_dev": {
+                "score_composed": 39.897,
+                "score_route": 41.786,
+                "score_penalty": 0.068
+            },
+            "meta": {
+                "total_length": 2539.919999999999,
+                "duration_game": 491.45000000000005,
+                "duration_system": 2598.4359999999997,
+                "exceptions": [
+                    [
+                        "RouteScenario_3248_rep0",
+                        14,
+                        "Failed - Agent crashed"
+                    ],
+                    [
+                        "RouteScenario_3255_rep0",
+                        15,
+                        "Failed - Agent crashed"
+                    ],
+                    [
+                        "RouteScenario_3731_rep0",
+                        16,
+                        "Failed - Agent crashed"
+                    ],
+                    [
+                        "RouteScenario_3737_rep0",
+                        17,
+                        "Failed - Agent crashed"
+                    ],
+                    [
+                        "RouteScenario_25863_rep0",
+                        24,
+                        "Failed - Agent crashed"
+                    ],
+                    [
+                        "RouteScenario_27582_rep0",
+                        27,
+                        "Failed - Agent crashed"
+                    ]
+                ]
+            }
+        },
+        "progress": [
+            28,
+            28
+        ],
+        "records": [
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route0_12_23_02_13_08",
+                "index": 0,
+                "route_id": "RouteScenario_2084_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 93.14% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.97942,
+                    "score_composed": 97.942
+                },
+                "meta": {
+                    "route_length": 79.28,
+                    "duration_game": 17.25,
+                    "duration_system": 101.256
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route1_12_23_02_16_49",
+                "index": 1,
+                "route_id": "RouteScenario_2086_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 99.01% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.99703,
+                    "score_composed": 99.703
+                },
+                "meta": {
+                    "route_length": 79.058,
+                    "duration_game": 14.6,
+                    "duration_system": 98.215
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route2_12_23_02_18_40",
+                "index": 2,
+                "route_id": "RouteScenario_2091_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 76.251,
+                    "duration_game": 9.95,
+                    "duration_system": 35.062
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route3_12_23_02_19_30",
+                "index": 3,
+                "route_id": "RouteScenario_2881_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 78.855,
+                    "duration_game": 10.95,
+                    "duration_system": 66.113
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route4_12_23_02_20_42",
+                "index": 4,
+                "route_id": "RouteScenario_26990_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 55.47% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.86641,
+                    "score_composed": 86.641
+                },
+                "meta": {
+                    "route_length": 85.788,
+                    "duration_game": 49.25,
+                    "duration_system": 154.212
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route5_12_23_02_23_20",
+                "index": 5,
+                "route_id": "RouteScenario_28087_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 87.29% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.96187,
+                    "score_composed": 96.187
+                },
+                "meta": {
+                    "route_length": 79.155,
+                    "duration_game": 14.8,
+                    "duration_system": 53.059
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route6_12_23_02_24_15",
+                "index": 6,
+                "route_id": "RouteScenario_28093_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 94.25% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.98275,
+                    "score_composed": 98.275
+                },
+                "meta": {
+                    "route_length": 81.221,
+                    "duration_game": 14.6,
+                    "duration_system": 63.099
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route7_12_23_02_25_55",
+                "index": 7,
+                "route_id": "RouteScenario_28210_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 80.858,
+                    "duration_game": 15.85,
+                    "duration_system": 67.096
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route8_12_23_02_27_15",
+                "index": 8,
+                "route_id": "RouteScenario_28219_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 80.698,
+                    "duration_game": 16.25,
+                    "duration_system": 65.093
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route9_12_23_02_28_33",
+                "index": 9,
+                "route_id": "RouteScenario_28229_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 38.27% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.81481,
+                    "score_composed": 81.481
+                },
+                "meta": {
+                    "route_length": 87.454,
+                    "duration_game": 40.1,
+                    "duration_system": 194.413
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route10_12_23_02_31_52",
+                "index": 10,
+                "route_id": "RouteScenario_28099_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 82.15% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.94645,
+                    "score_composed": 94.645
+                },
+                "meta": {
+                    "route_length": 85.496,
+                    "duration_game": 23.45,
+                    "duration_system": 80.108
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route11_12_23_02_33_51",
+                "index": 11,
+                "route_id": "RouteScenario_1711_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 80.8% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.9424,
+                    "score_composed": 94.24
+                },
+                "meta": {
+                    "route_length": 133.138,
+                    "duration_game": 17.0,
+                    "duration_system": 90.108
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route12_12_23_02_35_34",
+                "index": 12,
+                "route_id": "RouteScenario_1956_rep0",
+                "status": "Completed",
+                "num_infractions": 3,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 55.72% of the surrounding traffic's one",
+                        "Average speed is 96.38% of the surrounding traffic's one",
+                        "Average speed is 99.18% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.855633,
+                    "score_composed": 85.56326
+                },
+                "meta": {
+                    "route_length": 133.124,
+                    "duration_game": 21.05,
+                    "duration_system": 147.225
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route13_12_23_02_38_16",
+                "index": 13,
+                "route_id": "RouteScenario_2164_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 92.05% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.97615,
+                    "score_composed": 97.615
+                },
+                "meta": {
+                    "route_length": 74.8,
+                    "duration_game": 17.15,
+                    "duration_system": 95.15
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route14_12_23_02_41_39",
+                "index": 14,
+                "route_id": "RouteScenario_3248_rep0",
+                "status": "Failed - Agent crashed",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 0,
+                    "score_penalty": 1.0,
+                    "score_composed": 0.0
+                },
+                "meta": {
+                    "route_length": 133.137,
+                    "duration_game": 0.05,
+                    "duration_system": 5.005
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route15_12_23_02_42_01",
+                "index": 15,
+                "route_id": "RouteScenario_3255_rep0",
+                "status": "Failed - Agent crashed",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 0,
+                    "score_penalty": 1.0,
+                    "score_composed": 0.0
+                },
+                "meta": {
+                    "route_length": 117.121,
+                    "duration_game": 0.05,
+                    "duration_system": 4.004
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route16_12_23_02_42_31",
+                "index": 16,
+                "route_id": "RouteScenario_3731_rep0",
+                "status": "Failed - Agent crashed",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 0,
+                    "score_penalty": 1.0,
+                    "score_composed": 0.0
+                },
+                "meta": {
+                    "route_length": 79.252,
+                    "duration_game": 0.05,
+                    "duration_system": 4.004
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route17_12_23_02_42_55",
+                "index": 17,
+                "route_id": "RouteScenario_3737_rep0",
+                "status": "Failed - Agent crashed",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 0,
+                    "score_penalty": 1.0,
+                    "score_composed": 0.0
+                },
+                "meta": {
+                    "route_length": 73.558,
+                    "duration_game": 0.05,
+                    "duration_system": 4.004
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route18_12_23_02_43_38",
+                "index": 18,
+                "route_id": "RouteScenario_10857_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 99.38% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.99814,
+                    "score_composed": 99.814
+                },
+                "meta": {
+                    "route_length": 76.358,
+                    "duration_game": 14.45,
+                    "duration_system": 125.436
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route19_12_23_02_45_59",
+                "index": 19,
+                "route_id": "RouteScenario_11381_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 33.89% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.80167,
+                    "score_composed": 80.167
+                },
+                "meta": {
+                    "route_length": 76.349,
+                    "duration_game": 54.5,
+                    "duration_system": 392.492
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route20_12_23_02_52_46",
+                "index": 20,
+                "route_id": "RouteScenario_14194_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 75.254,
+                    "duration_game": 12.7,
+                    "duration_system": 83.156
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route21_12_23_02_54_23",
+                "index": 21,
+                "route_id": "RouteScenario_18252_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 133.153,
+                    "duration_game": 16.3,
+                    "duration_system": 116.178
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route22_12_23_02_56_26",
+                "index": 22,
+                "route_id": "RouteScenario_24206_rep0",
+                "status": "Perfect",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 1.0,
+                    "score_composed": 100.0
+                },
+                "meta": {
+                    "route_length": 133.013,
+                    "duration_game": 34.6,
+                    "duration_system": 145.256
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route23_12_23_02_58_59",
+                "index": 23,
+                "route_id": "RouteScenario_24294_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 64.32% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.89296,
+                    "score_composed": 89.296
+                },
+                "meta": {
+                    "route_length": 103.115,
+                    "duration_game": 13.35,
+                    "duration_system": 46.067
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route24_12_23_02_59_53",
+                "index": 24,
+                "route_id": "RouteScenario_25863_rep0",
+                "status": "Failed - Agent crashed",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 0,
+                    "score_penalty": 1.0,
+                    "score_composed": 0.0
+                },
+                "meta": {
+                    "route_length": 84.134,
+                    "duration_game": 0.05,
+                    "duration_system": 3.003
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route25_12_23_03_00_01",
+                "index": 25,
+                "route_id": "RouteScenario_27515_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 28.54% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.78562,
+                    "score_composed": 78.562
+                },
+                "meta": {
+                    "route_length": 81.952,
+                    "duration_game": 49.05,
+                    "duration_system": 295.533
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route26_12_23_03_05_01",
+                "index": 26,
+                "route_id": "RouteScenario_27529_rep0",
+                "status": "Completed",
+                "num_infractions": 1,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [
+                        "Average speed is 77.73% of the surrounding traffic's one"
+                    ],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 100,
+                    "score_penalty": 0.93319,
+                    "score_composed": 93.319
+                },
+                "meta": {
+                    "route_length": 69.967,
+                    "duration_game": 13.95,
+                    "duration_system": 63.087
+                }
+            },
+            {
+                "timestamp": "bench2drive220_1_pdm_lite_traj_route27_12_23_03_06_27",
+                "index": 27,
+                "route_id": "RouteScenario_27582_rep0",
+                "status": "Failed - Agent crashed",
+                "num_infractions": 0,
+                "infractions": {
+                    "collisions_layout": [],
+                    "collisions_pedestrian": [],
+                    "collisions_vehicle": [],
+                    "red_light": [],
+                    "stop_infraction": [],
+                    "outside_route_lanes": [],
+                    "min_speed_infractions": [],
+                    "yield_emergency_vehicle_infractions": [],
+                    "scenario_timeouts": [],
+                    "route_dev": [],
+                    "vehicle_blocked": [],
+                    "route_timeout": []
+                },
+                "scores": {
+                    "score_route": 0,
+                    "score_penalty": 1.0,
+                    "score_composed": 0.0
+                },
+                "meta": {
+                    "route_length": 68.381,
+                    "duration_game": 0.05,
+                    "duration_system": 1.002
+                }
+            }
+        ]
+    },
+    "entry_status": "Finished",
+    "eligible": true,
+    "sensors": [
+        "carla_opendrive_map",
+        "carla_imu",
+        "carla_speedometer",
+        "carla_camera",
+        "carla_camera",
+        "carla_camera",
+        "carla_camera",
+        "carla_camera",
+        "carla_camera",
+        "carla_lidar"
+    ],
+    "values": [
+        "74.051795",
+        "78.571429",
+        "0.954804",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "0.0",
+        "8.567"
+    ],
+    "labels": [
+        "Avg. driving score",
+        "Avg. route completion",
+        "Avg. infraction penalty",
+        "Collisions with pedestrians",
+        "Collisions with vehicles",
+        "Collisions with layout",
+        "Red lights infractions",
+        "Stop sign infractions",
+        "Off-road infractions",
+        "Route deviations",
+        "Route timeouts",
+        "Agent blocked",
+        "Yield emergency vehicles infractions",
+        "Scenario timeouts",
+        "Min speed infractions"
+    ]
+}
