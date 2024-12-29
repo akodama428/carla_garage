@@ -47,6 +47,9 @@ class CarlaDataProvider(object):  # pylint: disable=too-many-public-methods
 
     In addition it provides access to the map and the transform of all traffic lights
     """
+    # Saves, which type of scenario is currently runninng. That's necessary since some scenarios can't be detected / distinguished.
+    # the key saves the scenario type and the value all relevant data
+    active_scenarios = []
 
     _actor_velocity_map = {}
     _actor_location_map = {}

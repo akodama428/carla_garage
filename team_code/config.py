@@ -460,12 +460,13 @@ class GlobalConfig:
     self.learn_origin = 1  # Whether to learn the origin of the waypoints or use 0 / 0
     self.augment = 1  # Whether to use rotation and translation augmentation
     # At which interval to save debug files to disk during training
-    self.train_debug_save_freq = 1
+    self.train_debug_save_freq = 500
     self.backbone = 'transFuser'  # Vision backbone architecture used
     self.use_velocity = 1  # Whether to use the velocity as input to the network
     self.image_architecture = 'regnety_032'  # Image architecture used in the backbone resnet34, regnety_032
     self.lidar_architecture = 'regnety_032'  # LiDAR architecture used in the backbone resnet34, regnety_032
     # Whether to classify target speeds and regress a path as output representation.
+    # self.use_controller_input_prediction = False
     self.use_controller_input_prediction = True
     # Whether to use the direct control predictions for driving
     self.inference_direct_controller = True
@@ -640,7 +641,7 @@ class GlobalConfig:
 
     # Whether to normalize the camera image by the imagenet distribution
     self.normalize_imagenet = True
-    self.use_wp_gru = False  # Whether to use the WP output GRU.
+    self.use_wp_gru = True  # Whether to use the WP output GRU.
 
     # Semantic Segmentation
     self.use_semantic = True  # Whether to use semantic segmentation as auxiliary loss

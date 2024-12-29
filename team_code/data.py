@@ -486,7 +486,7 @@ class CARLA_Data(Dataset):  # pylint: disable=locally-disabled, invalid-name
       if self.config.use_semantic:
         loaded_semantics.append(semantics_i)
         loaded_semantics_augmented.append(semantics_augmented_i)
-      if self.config.use_bev_semantic:
+      if self.config.use_bev_semantic and not self.config.use_plant:
         # NOTE the BEV label can unfortunately only be saved up to 2.0 ppm resolution. We upscale it here.
         # If you change these values you might need to change the up-scaling as well.
         assert self.config.pixels_per_meter == 4.0

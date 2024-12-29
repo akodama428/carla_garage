@@ -103,9 +103,15 @@ class PlanT(nn.Module):
                                                                 hidden_size=self.config.gru_hidden_size,
                                                                 waypoints=self.config.num_route_points,
                                                                 target_point_size=0)
+      # self.checkpoint_decoder = GRUWaypointsPredictorInterFuser(input_dim=256,
+      #                                                           hidden_size=self.config.gru_hidden_size,
+      #                                                           waypoints=self.config.num_route_points,
+      #                                                           target_point_size=0)
 
       self.target_speed_network = nn.Sequential(nn.Linear(trans_out_features + 3, 128), nn.ReLU(inplace=True),
                                                 nn.Linear(128, len(config.target_speeds)))
+      # self.target_speed_network = nn.Sequential(nn.Linear(256, 256), nn.ReLU(inplace=True),
+      #                                           nn.Linear(256, len(config.target_speeds)))
 
       # PID controller for directly predicted input
       self.turn_controller_direct = t_u.PIDController(k_p=self.config.turn_kp,
@@ -206,6 +212,7 @@ class PlanT(nn.Module):
       assert (target_point is not None), 'target_point must be provided for wp output'
       assert (light_hazard is not None), 'light_hazard must be provided for wp output'
 
+    # bounding_boxesとの統合準備（bounding_boxesと同じ次元に合わせる）
     num_boxes_no_route = bounding_boxes.shape[1]
     route_padding = torch.zeros((bounding_boxes.shape[0], route.shape[1], 6),
                                 dtype=torch.float32,
@@ -213,10 +220,10 @@ class PlanT(nn.Module):
     route_padding[:, :, 5] = -1  # Mask type set to other
     route = torch.cat((route, route_padding), dim=2)
     # Add route as pseudo bbs.
-    cls_token = self.cls_emb.repeat(bounding_boxes.shape[0], 1, 1)
-    bounding_boxes = torch.cat((cls_token, bounding_boxes, route), dim=1)
-    input_batch_type = bounding_boxes[:, :, 7]  # class of bounding box
-    input_batch_data = bounding_boxes[:, :, :7]
+    cls_token = self.cls_emb.repeat(bounding_boxes.shape[0], 1, 1)  # clsトークンは各バッチの先頭に追加され、全体の情報を集約する役割
+    bounding_boxes = torch.cat((cls_token, bounding_boxes, route), dim=1)  # [バッチサイズ、1(clsトークン) + オブジェクト数 + 経路ステップ数, 属性数]
+    input_batch_type = bounding_boxes[:, :, 7]  # オブジェクトの属性
+    input_batch_data = bounding_boxes[:, :, :7]  # オブジェクトの主要データ
 
     # create masks by object type
     car_mask = (input_batch_type == 0).unsqueeze(-1)
@@ -299,22 +306,54 @@ class PlanT(nn.Module):
         output_wp.append(x)
 
       pred_wp = torch.stack(output_wp, dim=1)
+      # print(f"pred_wp:{pred_wp}")
 
     pred_target_speed = None
     pred_checkpoint = None
     if self.config.use_controller_input_prediction:
       speed_in = torch.cat([cls_feature, light_hazard, stop_hazard, junction], dim=1)
       pred_target_speed = self.target_speed_network(speed_in)
+      print(f"pred_target_speed:{pred_target_speed}")
+      print(f"light_hazard:{light_hazard}")
+      print(f"stop_hazard:{stop_hazard}")
+      print(f"junction:{junction}")
 
       pred_checkpoint = self.checkpoint_decoder(route_features, None)
 
     return pred_wp, pred_target_speed, pred_checkpoint, box_pred_logits
 
+  # 曲率の計算
+  def calculate_curvature(self, waypoints):
+      # 差分を計算 (dx, dy)
+      dx = waypoints[:, 1:, 0] - waypoints[:, :-1, 0]  # x座標の差分
+      dy = waypoints[:, 1:, 1] - waypoints[:, :-1, 1]  # y座標の差分
+
+      # ベクトルの角度変化を計算
+      angles = torch.atan2(dy, dx)  # 各ベクトルの角度
+      curvature = torch.abs(angles[:, 1:] - angles[:, :-1])  # 曲率を計算
+
+      # 曲率重みを調整 (1 を加えてスムーズにする)
+      curvature_weights = 1 + curvature.mean(dim=1, keepdim=True)  # -> (batch_size, num_waypoints-1)
+
+      return curvature_weights
+
   def compute_loss(self, pred_wp, pred_target_speed, pred_checkpoint, pred_future_bounding_box, waypoint_label,
                    target_speed_label, checkpoint_label, future_bounding_box_label):
     loss = {}
     if self.config.use_wp_gru:
-      loss_wp = torch.mean(torch.abs(pred_wp - waypoint_label))
+      #曲率重みを計算
+      curvature_weights = self.calculate_curvature(waypoint_label)  # -> (batch_size, num_waypoints-1)
+      
+      # 曲率重みの次元を pred_wp に合わせる
+      curvature_weights = curvature_weights.unsqueeze(-1)  # -> (batch_size, num_waypoints-1, 1)
+      curvature_weights = curvature_weights.expand_as(pred_wp[:, 1:, :])  # -> (batch_size, num_waypoints-1, 2)
+      
+      # ウェイポイント間の誤差を計算
+      loss_wp = torch.mean(curvature_weights * torch.abs(pred_wp[:, 1:, :] - waypoint_label[:, 1:, :]))
+
+      # print(f"waypoint_label:{waypoint_label}")
+
+      # loss_wp = torch.mean(torch.abs(pred_wp - waypoint_label))
       loss.update({'loss_wp': loss_wp})
 
     if self.config.use_controller_input_prediction:
@@ -354,6 +393,10 @@ class PlanT(nn.Module):
     one_second = int(self.config.carla_fps // (self.config.wp_dilation * self.config.data_save_freq))
     half_second = one_second // 2  # = 2
     desired_speed = np.linalg.norm(waypoints[half_second - 1] - waypoints[one_second - 1]) * 2.0
+    print(f"waypoints:{waypoints}")
+    print(f"half_second:{half_second}")
+    print(f"one_second:{one_second}")
+    print(f"desired_speed:{desired_speed}")
 
     brake = ((desired_speed < self.config.brake_speed) or ((speed / desired_speed) > self.config.brake_ratio))
 
@@ -425,11 +468,13 @@ class PlanT(nn.Module):
       obs_config = {
           'width_in_pixels': self.config.lidar_resolution_width * 4,
           'pixels_ev_to_bottom': self.config.lidar_resolution_height / 2.0 * 4,
-          'pixels_per_meter': self.config.pixels_per_meter * 4,
+          # 'pixels_per_meter': self.config.pixels_per_meter * 4,
+          'pixels_per_meter': self.config.pixels_per_meter * 2,
           'history_idx': [-1],
           'scale_bbox': True,
           'scale_mask_col': 1.0,
           'map_folder': 'maps_8ppm_cv'
+          # 'map_folder': 'maps'
       }
       self._vehicle = CarlaDataProvider.get_hero_actor()
       self.ss_bev_manager = ObsManager(obs_config, self.config)
@@ -470,8 +515,12 @@ class PlanT(nn.Module):
     origin = ((size_width * scale_factor) // 2, (size_height * scale_factor) // 2)
     loc_pixels_per_meter = self.config.pixels_per_meter * scale_factor
 
-    width = rgb.shape[2]
-    rgb = np.transpose(rgb, (1, 2, 0))
+    if rgb is not None:
+      width = rgb.shape[2]
+      rgb = np.transpose(rgb, (1, 2, 0))
+      print(f"width:{width}")
+    else:
+      width = 1024
 
     bev_image = np.ones((width, width, 3), dtype=np.uint8) * 255
 
@@ -574,7 +623,10 @@ class PlanT(nn.Module):
       cv2.putText(bev_image, f'Red light?: {str(light_hazard)}', (50, 965), cv2.FONT_HERSHEY_SIMPLEX, 1.0, text_color,
                   1, cv2.LINE_AA)
 
-    final_image = np.concatenate((rgb, bev_image), axis=0)
+    if rgb is not None:
+      final_image = np.concatenate((rgb, bev_image), axis=0)
+    else:
+      final_image = bev_image
     final_image = Image.fromarray(final_image.astype(np.uint8))
     store_path = str(str(save_path) + (f'/{step:04}.jpg'))
     Path(store_path).parent.mkdir(parents=True, exist_ok=True)

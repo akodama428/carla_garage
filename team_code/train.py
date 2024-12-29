@@ -545,6 +545,10 @@ def main():
       start_epoch = int(''.join(filter(str.isdigit, load_name))) + 1
     model.load_state_dict(torch.load(args.load_file, map_location=device), strict=False)
 
+  # Bertの事前学習モデルのパラメータは固定する
+  # if config.use_plant:
+  #   model.model.requires_grad_(False)
+
   if config.freeze_backbone:
     model.backbone.requires_grad_(False)
 
@@ -907,31 +911,52 @@ class Engine(object):
     self.step += 1
     # Debug visualizations
     if self.config.debug and (self.step % self.config.train_debug_save_freq == 0) and \
-        (self.vis_save_path is not None) and not self.config.use_plant:
-      with torch.no_grad():
-        if self.config.detect_boxes:
-          pred_bounding_box = self.model.module.convert_features_to_bb_metric(pred_bounding_box)
-        else:
-          pred_bounding_box = None
-
-        visualize_model(self.vis_save_path,
-                        self.step,
-                        rgb,
-                        lidar,
-                        target_point,
-                        pred_wp,
-                        target_point_next=target_point_next if self.config.two_tp_input else None,
-                        pred_semantic=pred_semantic,
-                        pred_bev_semantic=pred_bev_semantic,
-                        pred_depth=pred_depth,
-                        pred_checkpoint=pred_checkpoint,
-                        pred_speed=F.softmax(pred_target_speed, dim=1) if pred_target_speed is not None else None,
-                        pred_bb=pred_bounding_box,
-                        gt_wp=ego_waypoint,
-                        gt_bbs=bounding_box_label,
-                        gt_checkpoints=checkpoint,
-                        gt_bev_semantic=bev_semantic_label,
-                        gt_speed=ego_vel)
+        (self.vis_save_path is not None) :
+      print(f"debug:{self.config.debug}")
+      print(f"save step:{self.step % self.config.train_debug_save_freq}")
+      print(f"vis_save_path:{self.vis_save_path}")
+      print(f"use_plant:{self.config.use_plant}")
+    
+      if self.config.use_plant:
+        with torch.no_grad():
+          visualize_model(save_path=self.vis_save_path,
+                          step=self.step,
+                          rgb=None,
+                          target_point=target_point,
+                          pred_wp=pred_wp,
+                          gt_wp=ego_waypoint,
+                          gt_bbs=None,
+                          pred_speed=F.softmax(pred_target_speed, dim=1) if pred_target_speed is not None else None,
+                          gt_speed=ego_vel,
+                          junction=junction,
+                          light_hazard=light_hazard,
+                          stop_sign_hazard=stop_hazard,
+                          pred_bb=None,
+                          pred_checkpoint=pred_checkpoint)
+      else:
+        with torch.no_grad():
+          if self.config.detect_boxes:
+            pred_bounding_box = self.model.module.convert_features_to_bb_metric(pred_bounding_box)
+          else:
+            pred_bounding_box = None
+          visualize_model(self.vis_save_path,
+                          self.step,
+                          rgb,
+                          lidar,
+                          target_point,
+                          pred_wp,
+                          target_point_next=target_point_next if self.config.two_tp_input else None,
+                          pred_semantic=pred_semantic,
+                          pred_bev_semantic=pred_bev_semantic,
+                          pred_depth=pred_depth,
+                          pred_checkpoint=pred_checkpoint,
+                          pred_speed=F.softmax(pred_target_speed, dim=1) if pred_target_speed is not None else None,
+                          pred_bb=pred_bounding_box,
+                          gt_wp=ego_waypoint,
+                          gt_bbs=bounding_box_label,
+                          gt_checkpoints=checkpoint,
+                          gt_bev_semantic=bev_semantic_label,
+                          gt_speed=ego_vel)
 
     return losses, metrics
 

@@ -48,6 +48,9 @@ class PlanTAgent(DataAgent):
     self.config = GlobalConfig()
     # Overwrite all properties that were set in the save config.
     self.config.__dict__.update(loaded_config.__dict__)
+    # self.config.use_wp_gru = True
+    # self.config.use_controller_input_prediction = False
+    # self.config.pixels_per_meter = 1.0
 
     self.config.debug = int(os.environ.get('VISU_PLANT', 0)) == 1
     self.device = torch.device('cuda:0')
@@ -64,6 +67,8 @@ class PlanTAgent(DataAgent):
         os.environ.get('UNCERTAINTY_THRESHOLD', self.config.brake_uncertainty_threshold))
     if self.uncertainty_weight:
       print('Uncertainty threshold: ', self.config.brake_uncertainty_threshold)
+
+    # print(f"self.config:{self.config}")
 
     # Load model files
     self.nets = []
@@ -116,6 +121,7 @@ class PlanTAgent(DataAgent):
       self.init_map = True
 
     tick_data = super().run_step(input_data, timestamp, plant=True)
+    # print(f"tick_data:{tick_data}")
 
     if self.config.debug:
       camera = input_data['rgb_debug'][1][:, :, :3]
@@ -123,6 +129,7 @@ class PlanTAgent(DataAgent):
       rgb_debug = np.transpose(rgb_debug, (2, 0, 1))
 
     target_point = torch.tensor(tick_data['target_point'], dtype=torch.float32).to(self.device).unsqueeze(0)
+    print(f"target_point:{target_point}")
 
     # Preprocess route the same way we did during training
     route = tick_data['route']
@@ -211,6 +218,7 @@ class PlanTAgent(DataAgent):
     control.brake = float(brake)
 
     # Visualize the output of the last model
+    print(f"debug:{self.config.debug} path:{self.save_path}")
     if self.config.debug and (not self.save_path is None):
       self.nets[0].visualize_model(save_path=self.save_path,
                                    step=self.step,

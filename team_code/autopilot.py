@@ -317,7 +317,7 @@ class AutoPilot(autonomous_agent_local.AutonomousAgent):
       self._init(world_map)
 
     # Get the control commands and driving data for the current step
-    control, driving_data = self._get_control(input_data, plant)
+    control, driving_data = self._get_control(input_data, False)
 
     if plant:
       return driving_data
@@ -933,6 +933,8 @@ class AutoPilot(autonomous_agent_local.AutonomousAgent):
       if speed_reduced_by_obj_distance is not None:
         speed_reduced_by_obj_distance = float(speed_reduced_by_obj_distance)
 
+    # print(f"target_speed:{target_speed}")
+
     data = {
         "pos_global": ego_position.tolist(),
         "theta": ego_orientation,
@@ -1534,10 +1536,14 @@ class AutoPilot(autonomous_agent_local.AutonomousAgent):
         nearby_pedestrians, nearby_pedestrian_ids)
 
     # Compute the target speed with respect to the red light
+    print(f"distance_to_next_traffic_light:{distance_to_next_traffic_light}")
+    print(f"next_traffic_light.state:{next_traffic_light.state}")
+    print(f"initial_target_speed:{initial_target_speed}")
     target_speed_red_light = self.ego_agent_affected_by_red_light(ego_vehicle_location, ego_speed,
                                                                   distance_to_next_traffic_light, next_traffic_light,
                                                                   route_points, initial_target_speed)
 
+    print(f"target_speed_red_light:{target_speed_red_light}")
     # Update the object causing the most speed reduction
     if speed_reduced_by_obj is None or speed_reduced_by_obj[0] > target_speed_red_light:
       speed_reduced_by_obj = [
@@ -1568,6 +1574,9 @@ class AutoPilot(autonomous_agent_local.AutonomousAgent):
     elif target_speed == target_speed_stop_sign and target_speed_stop_sign != initial_target_speed:
       self.stop_sign_hazard = True
       self.stop_sign_close = True
+
+    print(f"target_speed:{target_speed}")
+    print(f"self.traffic_light_hazard:{self.traffic_light_hazard}")
 
     # Determine if the ego vehicle needs to brake based on the target speed
     brake = target_speed == 0
