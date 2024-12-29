@@ -175,8 +175,8 @@ if __name__ == '__main__':
 
   # the source path should be one level in the directory hierarchy above the folder(s) that contain the actual rgb, lidar, ... folders
   # aka the SAVE_PATH from start_autopilot.sh
-  source_path = ['/home/zimjulian/code/leaderboard2_human_data/database/debug_v4']
-  save_path = '/home/zimjulian/code/leaderboard2_human_data/data?visualization/debug_v4/Yield3998'
+  source_path = ['/home/atsushi/carla_garage/data_selected/Accident']
+  save_path = '/home/atsushi/carla_garage/logs/vis_dataset'
 
   config = GlobalConfig()
   print('Loading data')
@@ -187,6 +187,7 @@ if __name__ == '__main__':
   for i, data in enumerate(dataloader_train):  #enumerate(tqdm(dataloader_train, disable=rank != 0)):
     #if i % 10 == 0:
     print('+++++++++ ' + str(i) + ' +++++++++')
+    # print(f"data:{data}")
     rgb = data['rgb'].to(device, dtype=torch.float32)
     bev_semantic_label = data['bev_semantic'].to(device, dtype=torch.long)
     depth_label = data['depth'].to(device, dtype=torch.float32)
