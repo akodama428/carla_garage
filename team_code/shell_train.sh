@@ -14,13 +14,23 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/anaconda3/lib
 
 export OMP_NUM_THREADS=8  # Limits pytorch to spawn at most num cpus cores threads
 export OPENBLAS_NUM_THREADS=1  # Shuts off numpy multithreading, to avoid threads spawning other threads.
-#torchrun --nnodes=1 --nproc_per_node=1 --max_restarts=1 --rdzv_id=42353467 --rdzv_backend=c10d train.py --id train_id_000 --batch_size 8 --setting all --root_dir ~/code/leaderboard2_human_data/database/training_v0_2023_11_23 --logdir ~/code/leaderboard2_human_data/training_runs/debug --use_controller_input_prediction 1 --use_wp_gru 1 --use_discrete_command 1 --use_tp 1 --continue_epoch 1 --cpu_cores 8 --num_repetitions 1
+
+root_dir="/home/atsushi/carla_garage/data_selected"
+logdir="/home/atsushi/carla_garage/team_code/pretrained_models/all_towns"
+model="train_id_007"
+model_dir="${logdir}/${model}"
+mkdir ${model_dir}
+
+dataset_log="${model_dir}/dataset_log.txt"
+python3 /home/atsushi/carla_garage/tools/check_dataset.py ${root_dir} ${dataset_log}
+
 torchrun --nnodes=1 --nproc_per_node=1 --max_restarts=1 --rdzv_id=$SLURM_JOB_ID --rdzv_backend=c10d \
-    train.py --id train_id_003 --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 5 --lr 0.0003 --setting all \
-    --root_dir /home/atsushi/DriveLM/pdm_lite/log_root \
-    --logdir /home/atsushi/carla_garage/team_code/pretrained_models/all_towns \
-    --use_controller_input_prediction 1 --use_wp_gru 0 --use_discrete_command 1 --use_tp 1 --tp_attention 0 --continue_epoch 0 \
-    --load_file /home/atsushi/carla_garage/team_code/pretrained_models/all_towns/model_0030_2.pth \
+    train.py --id ${model} --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 5 --lr 0.0003 --setting all \
+    --root_dir ${root_dir} \
+    --logdir ${logdir} \
+    --load_file /home/atsushi/carla_garage/team_code/pretrained_models/all_towns/original/model_0030_2.pth \
+    --use_controller_input_prediction 1 --use_wp_gru 0 --continue_epoch 0 \
+    --use_discrete_command 1 --use_tp 1 --tp_attention 0  \
     --cpu_cores 8 --num_repetitions 1 \
     --crop_bev_height_only_from_behind 1 --lidar_resolution_height 256 --dataset_cache_name dataset_cache_256 
 

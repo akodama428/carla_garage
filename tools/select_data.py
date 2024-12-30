@@ -4,11 +4,16 @@ import subprocess
 
 # 元のデータフォルダのパス
 source_dir = "/home/atsushi/carla_garage/data"
+# source_dir = "/home/atsushi/carla_garage/data_selected"
 # 移動先のフォルダのパス
 destination_dir = "/home/atsushi/carla_garage/data_selected"
-
+# destination_dir = "/home/atsushi/carla_garage/data"
 # 2階層目のフォルダから抽出する数
-num_to_select = 25
+num_to_select = 10
+
+# 追加シナリオの指定
+# selected_scenarios = None
+selected_scenarios = ["EnterActorFlow", "EnterActorFlowV2", "NonSignalizedJunctionLeftTurn", "VehicleTurningRoutePedestrian"]
 
 def move_folders(source, destination, num_to_select):
     """
@@ -21,6 +26,11 @@ def move_folders(source, destination, num_to_select):
 
         # 1階層目がディレクトリである場合のみ処理
         if os.path.isdir(source_first_level_path):
+            if selected_scenarios is not None:
+                folder_name = os.path.basename(source_first_level_path)
+                if folder_name not in selected_scenarios:
+                    continue
+            
             # 移動先の1階層目フォルダを作成
             os.makedirs(destination_first_level_path, exist_ok=True)
 
@@ -43,3 +53,21 @@ def move_folders(source, destination, num_to_select):
 
 # 実行
 move_folders(source_dir, destination_dir, num_to_select)
+
+# フォルダ内のシナリオ数を表示
+def count_subsubfolders(folder_path):
+    results = {}
+    # サブフォルダごとに処理
+    for subfolder in os.scandir(folder_path):
+        if subfolder.is_dir():
+            # サブサブフォルダをカウント
+            subsubfolder_count = sum(
+                1 for entry in os.scandir(subfolder.path) if entry.is_dir()
+            )
+            results[subfolder.name] = subsubfolder_count
+    return results
+
+# destination_dir = "/home/atsushi/carla_garage/data_selected"
+results = count_subsubfolders(destination_dir)
+for subfolder, count in results.items():
+    print(f"{subfolder}: {count}")
