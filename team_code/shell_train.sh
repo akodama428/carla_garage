@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export CARLA_ROOT="/home/atsushi/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20"
-export WORK_DIR="/home/atsushi/carla_garage"
+export CARLA_ROOT="/mnt/ssd/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20"
+export WORK_DIR="/mnt/ssd/carla_garage"
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla
 # export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla/dist/carla-0.9.14-py3.7-linux-x86_64.egg
@@ -15,20 +15,20 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/anaconda3/lib
 export OMP_NUM_THREADS=8  # Limits pytorch to spawn at most num cpus cores threads
 export OPENBLAS_NUM_THREADS=1  # Shuts off numpy multithreading, to avoid threads spawning other threads.
 
-root_dir="/home/atsushi/carla_garage/data_selected"
-logdir="/home/atsushi/carla_garage/team_code/pretrained_models/all_towns"
-model="train_id_007"
+root_dir="/mnt/ssd/carla_garage/data_selected"
+logdir="/mnt/ssd/carla_garage/team_code/pretrained_models/all_towns"
+model="train_id_007_tf_30scenario"
 model_dir="${logdir}/${model}"
 mkdir ${model_dir}
 
 dataset_log="${model_dir}/dataset_log.txt"
-python3 /home/atsushi/carla_garage/tools/check_dataset.py ${root_dir} ${dataset_log}
+python3 /mnt/ssd/carla_garage/tools/check_dataset.py ${root_dir} ${dataset_log}
 
 torchrun --nnodes=1 --nproc_per_node=1 --max_restarts=1 --rdzv_id=$SLURM_JOB_ID --rdzv_backend=c10d \
     train.py --id ${model} --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 5 --lr 0.0003 --setting all \
     --root_dir ${root_dir} \
     --logdir ${logdir} \
-    --load_file /home/atsushi/carla_garage/team_code/pretrained_models/all_towns/original/model_0030_2.pth \
+    --load_file /mnt/ssd/carla_garage/team_code/pretrained_models/all_towns/original/model_0030_2.pth \
     --use_controller_input_prediction 1 --use_wp_gru 0 --continue_epoch 0 \
     --use_discrete_command 1 --use_tp 1 --tp_attention 0  \
     --cpu_cores 8 --num_repetitions 1 \

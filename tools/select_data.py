@@ -3,16 +3,16 @@ import random
 import subprocess
 
 # 元のデータフォルダのパス
-source_dir = "/home/atsushi/carla_garage/data"
-# source_dir = "/home/atsushi/carla_garage/data_selected"
+source_dir = "/mnt/ssd/carla_garage/data"
+# source_dir = "/mnt/ssd/carla_garage/data_selected"
 # 移動先のフォルダのパス
-destination_dir = "/home/atsushi/carla_garage/data_selected"
-# destination_dir = "/home/atsushi/carla_garage/data"
+destination_dir = "/mnt/ssd/carla_garage/data_selected"
+# destination_dir = "/mnt/ssd/carla_garage/data"
 # 2階層目のフォルダから抽出する数
-num_to_select = 10
+num_to_select = 20
 
 # 追加シナリオの指定
-# selected_scenarios = None
+# selected_scenarios = None  # すべてのシナリオが選択させる
 selected_scenarios = ["EnterActorFlow", "EnterActorFlowV2", "NonSignalizedJunctionLeftTurn", "VehicleTurningRoutePedestrian"]
 
 def move_folders(source, destination, num_to_select):
@@ -67,7 +67,7 @@ def count_subsubfolders(folder_path):
             results[subfolder.name] = subsubfolder_count
     return results
 
-# destination_dir = "/home/atsushi/carla_garage/data_selected"
+# destination_dir = "/mnt/ssd/carla_garage/data_selected"
 results = count_subsubfolders(destination_dir)
 for subfolder, count in results.items():
     print(f"{subfolder}: {count}")

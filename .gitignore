@@ -214,5 +214,6 @@ cython_debug/
 /evaluation
 /team_code/pretrained_models
 /team_code/pretrained_models.zip
+/team_code/model
 /Bench2Drive/leaderboard/data/eval_bench2drive220_tfpp_traj
 /Bench2Drive/leaderboard/data/eval_bench2drive220_pdm_lite_traj

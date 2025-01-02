@@ -1,7 +1,7 @@
  #!/bin/bash
 
-export CARLA_ROOT="/home/atsushi/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20"
-export WORK_DIR="/home/atsushi/carla_garage"
+export CARLA_ROOT="/mnt/ssd/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20"
+export WORK_DIR="/mnt/ssd/carla_garage"
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla
 export SCENARIO_RUNNER_ROOT=${WORK_DIR}/scenario_runner
@@ -9,8 +9,8 @@ export LEADERBOARD_ROOT=${WORK_DIR}/leaderboard
 export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}":${PYTHONPATH}
 
 # export TEAM_AGENT=$LEADERBOARD_ROOT/leaderboard/autoagents/human_agent.py
-export TEAM_AGENT="/home/atsushi/carla_garage/team_code/sensor_agent.py"
-export TEAM_CONFIG="/home/atsushi/carla_garage/team_code/pretrained_models/all_towns"
+export TEAM_AGENT="/mnt/ssd/carla_garage/team_code/sensor_agent.py"
+export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/tf_10scenario"
 
 export ROUTES=$LEADERBOARD_ROOT/data/routes_devtest.xml
 export ROUTES_SUBSET=0
@@ -19,8 +19,8 @@ export REPETITIONS=1
 export DEBUG_CHALLENGE=1
 export CHALLENGE_TRACK_CODENAME=SENSORS
 export CHECKPOINT_ENDPOINT="${LEADERBOARD_ROOT}/results.json"
-export RECORD_PATH="/home/atsushi/carla_garage/logs"
-export SAVE_PATH="/home/atsushi/carla_garage/logs"
+export RECORD_PATH="/mnt/ssd/carla_garage/logs"
+export SAVE_PATH="/mnt/ssd/carla_garage/logs"
 export RESUME=0
 
 # Make sure any previously started Carla simulator instance is stopped

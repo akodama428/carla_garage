@@ -1,8 +1,8 @@
-export CARLA_ROOT=/home/atsushi/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20
-export WORK_DIR=/home/atsushi/carla_garage/Bench2Drive
+export CARLA_ROOT=/mnt/ssd/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20
+export WORK_DIR=/mnt/ssd/carla_garage/Bench2Drive
 export SCENARIO_RUNNER_ROOT=${WORK_DIR}/scenario_runner
 export LEADERBOARD_ROOT=${WORK_DIR}/leaderboard
-export PYTHONPATH=$PYTHONPATH:/home/atsushi/carla_garage/team_code
+export PYTHONPATH=$PYTHONPATH:/mnt/ssd/carla_garage/team_code
 export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}":${PYTHONPATH}
 
 #!/bin/bash
@@ -10,10 +10,10 @@ BASE_PORT=2000
 BASE_TM_PORT=8000
 IS_BENCH2DRIVE=True
 BASE_ROUTES=${WORK_DIR}/leaderboard/data/bench2drive220
-TEAM_AGENT=/home/atsushi/carla_garage/team_code/sensor_agent.py
+TEAM_AGENT=/mnt/ssd/carla_garage/team_code/sensor_agent.py
 # Must set YOUR_CKPT_PATH
-TEAM_CONFIG=/home/atsushi/carla_garage/team_code/pretrained_models/all_towns
-# TEAM_CONFIG=/home/atsushi/carla_garage/team_code/pretrained_models/all_towns/train_id_001
+TEAM_CONFIG=/mnt/ssd/carla_garage/team_code/pretrained_models/all_towns
+# TEAM_CONFIG=/mnt/ssd/carla_garage/team_code/pretrained_models/all_towns/train_id_001
 BASE_CHECKPOINT_ENDPOINT=eval_bench2drive220
 PLANNER_TYPE=traj
 ALGO=tfpp

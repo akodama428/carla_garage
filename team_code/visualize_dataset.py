@@ -175,8 +175,8 @@ if __name__ == '__main__':
 
   # the source path should be one level in the directory hierarchy above the folder(s) that contain the actual rgb, lidar, ... folders
   # aka the SAVE_PATH from start_autopilot.sh
-  source_path = ['/home/atsushi/carla_garage/data_selected/VehicleTurningRoutePedestrian']
-  save_path = '/home/atsushi/carla_garage/logs/vis_dataset'
+  source_path = ['/mnt/ssd/carla_garage/data_selected/VehicleTurningRoutePedestrian']
+  save_path = '/mnt/ssd/carla_garage/logs/vis_dataset'
 
   config = GlobalConfig()
   print('Loading data')
