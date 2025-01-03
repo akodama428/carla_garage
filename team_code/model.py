@@ -152,6 +152,18 @@ class LidarCenterNet(nn.Module):
 
         self.change_channel = nn.Conv2d(self.backbone.num_features, self.config.gru_input_size, kernel_size=1)
 
+        # 過去フレーム連結時の位置エンコーダー定義
+        self.fused_features_buffer = []
+        self.max_past_frames = 5   # TODO: config設定に追加すること
+        self.buffer_skip_step = 5  # TODO: config設定に追加すること
+        self.mlp_comp_seq_len = 65  # TODO: config設定に追加すること
+        self.frame_accumulation_counter = 0
+        self.frame_embedding = FrameEmbedding(max_frames=self.max_past_frames, embedding_dim=self.config.gru_input_size)
+        sensor_embeded_size = 65   # 入力次元は確認の上、設定
+        # self.mlp_compressor = nn.Sequential(nn.Linear(self.max_past_frames * sensor_embeded_size, self.mlp_comp_seq_len),
+        #                                     nn.ReLU(),
+        #                                     nn.Linear(self.mlp_comp_seq_len, self.mlp_comp_seq_len))
+
         if self.config.use_wp_gru:
           if self.config.multi_wp_output:
             self.wp_query = nn.Parameter(
@@ -341,17 +353,54 @@ class LidarCenterNet(nn.Module):
         # 統合された特徴と追加センサ情報を結合
         if self.config.transformer_decoder_join:
           extra_sensors = extra_sensors + self.extra_sensor_pos_embed.repeat(bs, 1)
-          fused_features = torch.cat((fused_features, extra_sensors.unsqueeze(2)), axis=2)
+          fused_features = torch.cat((fused_features, extra_sensors.unsqueeze(2)), axis=2)  # [batch_size, config.gru_input_size, seq_len + 1]
         else:
           fused_features = torch.cat((fused_features, extra_sensors), axis=1)
 
+      # print(f"fused_features.shape:{fused_features.shape}")  # torch.Size([1, 256, 65])
+      # バッファに現在のfused_featuresを保存（FIFO）
+      self.frame_accumulation_counter += 1
+      if self.frame_accumulation_counter % self.buffer_skip_step == 0:
+        if len(self.fused_features_buffer) >= self.max_past_frames:
+          self.fused_features_buffer.pop(0)  # 古いフレームを削除
+        self.fused_features_buffer.append(fused_features.detach())  # フラット化後の特徴を追加
+
+      # バッファが空の場合でも処理を進めるための対応
+      if len(self.fused_features_buffer) < self.max_past_frames:
+          # 現在のフレームを max_past_frames 分繰り返して連結
+          repeated_features = [fused_features.detach()] * self.max_past_frames
+          past_fused_features = torch.cat(repeated_features, dim=2)
+      else:
+          # バッファ内容を連結
+          past_fused_features = torch.cat(self.fused_features_buffer, dim=2)
+      # print(f"past_fused_features.shape:{past_fused_features.shape}")  # torch.Size([1, 256, 325])
+
+      # フレームインデックスを生成
+      batch_size = past_fused_features.size(0)
+      num_timestamps = self.max_past_frames
+      frame_indices = torch.arange(num_timestamps, device=past_fused_features.device).unsqueeze(0).repeat(batch_size, 1)  # [batch_size, num_timestamps]
+      # print(f"frame_indices:{frame_indices}")  # tensor([[0, 1, 2, 3, 4]], device='cuda:0')
+      # フレームインデックスを埋め込みに変換
+      temporal_pos = self.frame_embedding(frame_indices)  # [batch_size, num_timestamps, embedding_dim]
+     
+      # `temporal_pos` を seq_len にブロードキャスト
+      embedding_dim = past_fused_features.size(1)
+      timestamp_len = past_fused_features.size(2) // num_timestamps  # 各タイムスタンプのfused_featuresの長さ
+      temporal_pos = temporal_pos.unsqueeze(3).expand(-1, -1, -1, timestamp_len).reshape(batch_size, embedding_dim, -1)  # [batch_size, embedding_dim, seq_len]
+      # print(f"temporal_pos.shape:{temporal_pos.shape}")  # torch.Size([1, 256, 325])
+      # 時間的な位置エンコーディングを特徴量に追加
+      past_fused_features = past_fused_features + temporal_pos
+
       # === ウェイポイント予測 ===
       if self.config.transformer_decoder_join:
-        fused_features = torch.permute(fused_features, (0, 2, 1))  # 次元の順序を変更
+        ## 過去フレーム分連結後に長くなったシーケンス方向の次元を圧縮　
+        # past_fused_features = self.mlp_compressor(past_fused_features)
+        # print(f"past_fused_features.shape(after comp):{past_fused_features.shape}")  # torch.Size([1, 256, 65])
+        past_fused_features = torch.permute(past_fused_features, (0, 2, 1))  # 次元の順序を変更　# [batch_size, seq_len, embedding_dim]
         if self.config.use_wp_gru:
           if self.config.multi_wp_output:
             # 複数のウェイポイントを予測
-            joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)   # self.joinがTransformerDecoder
+            joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), past_fused_features)   # self.joinがTransformerDecoder
             num_wp = (self.config.pred_len // self.config.wp_dilation)
             pred_wp = self.wp_decoder(joined_wp_features[:, :num_wp], target_point)
             pred_wp_1 = self.wp_decoder_1(joined_wp_features[:, num_wp:2 * num_wp], target_point)
@@ -359,17 +408,17 @@ class LidarCenterNet(nn.Module):
           else:
             # 単一のウェイポイントを予測
             if self.config.tp_attention:
-              joined_wp_features, _ = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)
+              joined_wp_features, _ = self.join(self.wp_query.repeat(bs, 1, 1), past_fused_features)
             else:
-              joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), fused_features)
+              joined_wp_features = self.join(self.wp_query.repeat(bs, 1, 1), past_fused_features)
             pred_wp = self.wp_decoder(joined_wp_features, target_point)
 
         # === 目標速度予測 ===
         if self.config.use_controller_input_prediction:
           if self.config.tp_attention:
             tp_token = self.tp_encoder(target_point) + self.tp_pos_embed
-            fused_features = torch.cat((fused_features, tp_token.unsqueeze(1)), axis=1)
-            joined_checkpoint_features, attention = self.join(self.checkpoint_query.repeat(bs, 1, 1), fused_features)  # self.joinがTransformerDecoder
+            past_fused_features = torch.cat((past_fused_features, tp_token.unsqueeze(1)), axis=1)
+            joined_checkpoint_features, attention = self.join(self.checkpoint_query.repeat(bs, 1, 1), past_fused_features)  # self.joinがTransformerDecoder
             gru_attention = attention[:, :self.config.predict_checkpoint_len]
             gru_attention = torch.mean(gru_attention, dim=1)[0]
             vision_attention = torch.sum(gru_attention[:num_pixel_tokens])
@@ -381,7 +430,7 @@ class LidarCenterNet(nn.Module):
             tp_attention = gru_attention[num_pixel_tokens + add:]
             attention_weights = [vision_attention.item(), speed_attention.item(), tp_attention.item()]
           else:
-            joined_checkpoint_features = self.join(self.checkpoint_query.repeat(bs, 1, 1), fused_features)
+            joined_checkpoint_features = self.join(self.checkpoint_query.repeat(bs, 1, 1), past_fused_features)
 
           # チェックポイントと目標速度をデコード
           gru_features = joined_checkpoint_features[:, :self.config.predict_checkpoint_len]
@@ -395,7 +444,7 @@ class LidarCenterNet(nn.Module):
             pred_target_speed = self.target_speed_network(target_speed_features)
       else:
         # transformer_decoder_joinが無効な場合のフォールバック
-        joined_features = self.join(fused_features)
+        joined_features = self.join(past_fused_features)
         gru_features = joined_features
         target_speed_features = joined_features[:, :self.config.gru_hidden_size]
 
@@ -1028,3 +1077,23 @@ class PositionEmbeddingSine(nn.Module):
     pos_y = torch.stack((pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()), dim=4).flatten(3)
     pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
     return pos
+
+class FrameEmbedding(nn.Module):
+    def __init__(self, max_frames, embedding_dim):
+        """
+        Args:
+            max_frames (int): 最大フレーム数。
+            embedding_dim (int): 埋め込みベクトルの次元。
+        """
+        super().__init__()
+        self.embedding = nn.Embedding(max_frames, embedding_dim)
+
+    def forward(self, frame_indices):
+        """
+        Args:
+            frame_indices (torch.Tensor): フレームインデックス（shape: [batch_size, seq_len]）。
+        
+        Returns:
+            torch.Tensor: フレーム埋め込み（shape: [batch_size, seq_len, embedding_dim]）。
+        """
+        return self.embedding(frame_indices)

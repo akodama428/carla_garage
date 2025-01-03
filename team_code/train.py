@@ -565,7 +565,7 @@ def main():
   # Synchronizing the Batch Norms increases the Batch size with which they are compute by *num_gpus
   if bool(args.sync_batch_norm):
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-  find_unused_parameters = False
+  find_unused_parameters = True
   if config.use_plant:
     find_unused_parameters = True
   model = torch.nn.parallel.DistributedDataParallel(model,
@@ -601,7 +601,7 @@ def main():
   g_cuda.manual_seed(torch.initial_seed())
 
   sampler_train = torch.utils.data.distributed.DistributedSampler(train_set,
-                                                                  shuffle=True,
+                                                                  shuffle=False,
                                                                   num_replicas=world_size,
                                                                   rank=rank,
                                                                   drop_last=True)

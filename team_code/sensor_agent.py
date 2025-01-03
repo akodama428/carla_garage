@@ -143,7 +143,7 @@ class SensorAgent(autonomous_agent.AutonomousAgent):
           # Need to convert it otherwise parameters will load wrong.
           net = torch.nn.SyncBatchNorm.convert_sync_batchnorm(net)
         state_dict = torch.load(os.path.join(self.config_path, file), map_location=self.device)
-        net.load_state_dict(state_dict, strict=True)
+        net.load_state_dict(state_dict, strict=False)  # strict=Falseにすることで新たに追加したパラメータは事前モデルのパラメータを適用しない
         net.cuda(device=self.device)
         net.eval()
 

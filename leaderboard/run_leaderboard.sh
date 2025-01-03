@@ -10,7 +10,7 @@ export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${
 
 # export TEAM_AGENT=$LEADERBOARD_ROOT/leaderboard/autoagents/human_agent.py
 export TEAM_AGENT="/mnt/ssd/carla_garage/team_code/sensor_agent.py"
-export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/tf_10scenario"
+export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/tf_30scenario"
 
 export ROUTES=$LEADERBOARD_ROOT/data/routes_devtest.xml
 export ROUTES_SUBSET=0

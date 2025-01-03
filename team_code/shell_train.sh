@@ -17,7 +17,7 @@ export OPENBLAS_NUM_THREADS=1  # Shuts off numpy multithreading, to avoid thread
 
 root_dir="/mnt/ssd/carla_garage/data_selected"
 logdir="/mnt/ssd/carla_garage/team_code/pretrained_models/all_towns"
-model="train_id_007_tf_30scenario"
+model="train_id_008_tf_mod_30scenario"
 model_dir="${logdir}/${model}"
 mkdir ${model_dir}
 
