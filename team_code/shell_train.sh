@@ -25,13 +25,13 @@ dataset_log="${model_dir}/dataset_log.txt"
 python3 /mnt/ssd/carla_garage/tools/check_dataset.py ${root_dir} ${dataset_log}
 
 torchrun --nnodes=1 --nproc_per_node=1 --max_restarts=1 --rdzv_id=$SLURM_JOB_ID --rdzv_backend=c10d \
-    train.py --id ${model} --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 5 --lr 0.0003 --setting all \
+    train.py --id ${model} --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 16 --lr 0.0003 --setting all \
     --root_dir ${root_dir} \
     --logdir ${logdir} \
     --load_file /mnt/ssd/carla_garage/team_code/pretrained_models/all_towns/original/model_0030_2.pth \
     --use_controller_input_prediction 1 --use_wp_gru 0 --continue_epoch 0 \
     --use_discrete_command 1 --use_tp 1 --tp_attention 0  \
-    --cpu_cores 8 --num_repetitions 1 \
+    --cpu_cores 20 --num_repetitions 1 \
     --crop_bev_height_only_from_behind 1 --lidar_resolution_height 256 --dataset_cache_name dataset_cache_256 
 
 # /home/geiger/gwb791/code/leaderboard2_human_data/database/training_v3_oldtowns_2024_04_10

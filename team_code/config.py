@@ -511,7 +511,7 @@ class GlobalConfig:
     self.color_aug_prob = 0.5  # With which probability to apply the different image color augmentations.
     self.use_cutout = False  # Whether to use cutout as a data augmentation technique during training.
     self.lidar_aug_prob = 1.0  # Probability with which data augmentation is applied to the LiDAR image.
-    self.freeze_backbone = False  # Whether to freeze the image backbone during training. Useful for 2 stage training.
+    self.freeze_backbone = True  # Whether to freeze the image backbone during training. Useful for 2 stage training.
     self.learn_multi_task_weights = False  # Whether to learn the multi-task weights
     self.use_bev_semantic = True  # Whether to use bev semantic segmentation as auxiliary loss for training.
     self.use_depth = True  # Whether to use depth prediction as auxiliary loss for training.
