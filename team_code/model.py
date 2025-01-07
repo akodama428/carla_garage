@@ -155,14 +155,14 @@ class LidarCenterNet(nn.Module):
         # 過去フレーム連結時の位置エンコーダー定義
         self.fused_features_buffer = []
         self.max_past_frames = 5   # TODO: config設定に追加すること
-        self.buffer_skip_step = 5  # TODO: config設定に追加すること
+        self.buffer_skip_step = 1  # TODO: config設定に追加すること
         self.mlp_comp_seq_len = 65  # TODO: config設定に追加すること
         self.frame_accumulation_counter = 0
         self.frame_embedding = FrameEmbedding(max_frames=self.max_past_frames, embedding_dim=self.config.gru_input_size)
         sensor_embeded_size = 65   # 入力次元は確認の上、設定
-        # self.mlp_compressor = nn.Sequential(nn.Linear(self.max_past_frames * sensor_embeded_size, self.mlp_comp_seq_len),
-        #                                     nn.ReLU(),
-        #                                     nn.Linear(self.mlp_comp_seq_len, self.mlp_comp_seq_len))
+        self.mlp_compressor = nn.Sequential(nn.Linear(self.max_past_frames * sensor_embeded_size, self.mlp_comp_seq_len),
+                                            nn.ReLU(),
+                                            nn.Linear(self.mlp_comp_seq_len, self.mlp_comp_seq_len))
 
         if self.config.use_wp_gru:
           if self.config.multi_wp_output:
@@ -394,7 +394,7 @@ class LidarCenterNet(nn.Module):
       # === ウェイポイント予測 ===
       if self.config.transformer_decoder_join:
         ## 過去フレーム分連結後に長くなったシーケンス方向の次元を圧縮　
-        # past_fused_features = self.mlp_compressor(past_fused_features)
+        past_fused_features = self.mlp_compressor(past_fused_features)
         # print(f"past_fused_features.shape(after comp):{past_fused_features.shape}")  # torch.Size([1, 256, 65])
         past_fused_features = torch.permute(past_fused_features, (0, 2, 1))  # 次元の順序を変更　# [batch_size, seq_len, embedding_dim]
         if self.config.use_wp_gru:

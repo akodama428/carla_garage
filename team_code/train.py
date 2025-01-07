@@ -21,7 +21,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Sampler
 from torch.utils.tensorboard import SummaryWriter
 from torch.distributed.elastic.multiprocessing.errors import record
 from torch.distributed.optim import ZeroRedundancyOptimizer
@@ -600,11 +600,22 @@ def main():
   g_cuda = torch.Generator(device='cpu')
   g_cuda.manual_seed(torch.initial_seed())
 
-  sampler_train = torch.utils.data.distributed.DistributedSampler(train_set,
-                                                                  shuffle=False,
-                                                                  num_replicas=world_size,
-                                                                  rank=rank,
-                                                                  drop_last=True)
+  # sampler_train = torch.utils.data.distributed.DistributedSampler(train_set,
+  #                                                                 shuffle=False,
+  #                                                                 num_replicas=world_size,
+  #                                                                 rank=rank,
+  #                                                                 drop_last=True)
+
+  sampler_train = TimeSeriesDistributedSampler(dataset=train_set,
+                                               num_replicas=world_size,
+                                               rank=rank,
+                                               shuffle=False,
+                                               seed=42,
+                                               drop_last=True,
+                                               window_size=40,  # 時系列ウィンドウのサイズ
+                                               batch_size=args.batch_size) 
+
+
   dataloader_train = DataLoader(train_set,
                                 sampler=sampler_train,
                                 batch_size=args.batch_size,
@@ -1071,6 +1082,77 @@ class Engine(object):
           os.remove(last_scaler_file)
         if os.path.isfile(last_scheduler_file):
           os.remove(last_scheduler_file)
+
+class TimeSeriesDistributedSampler(Sampler):
+    def __init__(self, dataset, num_replicas=None, rank=None, shuffle=True, seed=0, drop_last=False, window_size=1, batch_size=1):
+        """
+        Args:
+            dataset (Dataset): 学習データセット
+            num_replicas (int, optional): 分散トレーニングの総プロセス数
+            rank (int, optional): 現在のプロセスのランク
+            shuffle (bool): セット単位でシャッフルするかどうか
+            seed (int): シャッフル時のランダムシード
+            drop_last (bool): 最後のセットが `batch_size × window_size` に満たない場合に除外
+            window_size (int): ウィンドウのサイズ
+            batch_size (int): 1バッチ内のデータ数
+        """
+        self.dataset = dataset
+        self.num_replicas = num_replicas or torch.distributed.get_world_size()
+        self.rank = rank or torch.distributed.get_rank()
+        self.shuffle = shuffle
+        self.seed = seed
+        self.drop_last = drop_last
+        self.window_size = window_size
+        self.batch_size = batch_size
+        self.data_length = len(dataset)
+        self.indices = self._generate_indices()
+        self.num_samples = len(self.indices)
+
+    def _generate_indices(self):
+        """
+        データを `batch_size × window_size` 単位で分割し、シャッフル後に並べ替え。
+        """
+        # データ全体を `batch_size × window_size` 単位で分割
+        unit_size = self.batch_size * self.window_size
+        total_units = self.data_length // unit_size
+        units = [
+            list(range(i * unit_size, (i + 1) * unit_size))
+            for i in range(total_units)
+        ]
+
+        # 最後のセットを除外 (drop_last=True の場合)
+        if self.drop_last and self.data_length % unit_size != 0:
+            units = units[:-1]
+
+        # シャッフル
+        if self.shuffle:
+            rng = np.random.default_rng(self.seed)
+            rng.shuffle(units)
+
+        # 各セットをバッチ内で連続データになるように並べ替え
+        reordered_indices = []
+        for unit in units:
+            # 各セットを `window_size` ごとに分割
+            windowed_indices = [
+                unit[i::self.window_size] for i in range(self.window_size)
+            ]
+            # 再配置して連続データを構築
+            reordered_indices.extend([idx for window in windowed_indices for idx in window])
+
+        return reordered_indices
+
+    def set_epoch(self, epoch):
+        """
+        エポックごとにシャッフルシードを変更するためのメソッド。
+        """
+        self.seed = self.seed + epoch
+        self.indices = self._generate_indices()
+
+    def __iter__(self):
+        return iter(self.indices)
+
+    def __len__(self):
+        return len(self.indices)
 
 
 # We need to seed the workers individually otherwise random processes in the

@@ -14,10 +14,11 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/anaconda3/lib
 
 export OMP_NUM_THREADS=8  # Limits pytorch to spawn at most num cpus cores threads
 export OPENBLAS_NUM_THREADS=1  # Shuts off numpy multithreading, to avoid threads spawning other threads.
+# export DEBUG_CHALLENGE=1
 
 root_dir="/mnt/ssd/carla_garage/data_selected"
 logdir="/mnt/ssd/carla_garage/team_code/pretrained_models/all_towns"
-model="train_id_008_tf_mod_30scenario"
+model="train_id_008_tf_mod_with_mlpcomp_30scenario_shuffle"
 model_dir="${logdir}/${model}"
 mkdir ${model_dir}
 
@@ -25,7 +26,7 @@ dataset_log="${model_dir}/dataset_log.txt"
 python3 /mnt/ssd/carla_garage/tools/check_dataset.py ${root_dir} ${dataset_log}
 
 torchrun --nnodes=1 --nproc_per_node=1 --max_restarts=1 --rdzv_id=$SLURM_JOB_ID --rdzv_backend=c10d \
-    train.py --id ${model} --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 16 --lr 0.0003 --setting all \
+    train.py --id ${model} --crop_image 1 --use_velocity 1 --seed 2 --epochs 31 --batch_size 3 --lr 0.0003 --setting all \
     --root_dir ${root_dir} \
     --logdir ${logdir} \
     --load_file /mnt/ssd/carla_garage/team_code/pretrained_models/all_towns/original/model_0030_2.pth \
