@@ -2,6 +2,14 @@
       <weathers>
          <weather route_percentage="0" cloudiness="80.000000" precipitation="30.000000" precipitation_deposits="50.000000" wetness="0.000000" wind_intensity="0.400000" sun_azimuth_angle="225.000000" sun_altitude_angle="5.000000" fog_density="0.000000" fog_distance="0.000000"/>
       </weathers>
+      <!-- <weathers>
+         <weather route_percentage="0"
+            cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
+            wind_intensity="10.0" sun_azimuth_angle="-1.0" sun_altitude_angle="90.0" fog_density="2.0"/>
+         <weather route_percentage="100"
+            cloudiness="5.0" precipitation="0.0" precipitation_deposits="0.0" wetness="0.0"
+            wind_intensity="10.0" sun_azimuth_angle="-1.0" sun_altitude_angle="15.0" fog_density="2.0"/>
+      </weathers> -->
       <waypoints>
          <position x="334.7254638671875" y="288.90679931640625" z="0.0"/>
          <position x="334.7344970703125" y="313.657958984375" z="0.0"/>
