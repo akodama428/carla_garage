@@ -469,11 +469,11 @@ class PlanT(nn.Module):
           'width_in_pixels': self.config.lidar_resolution_width * 4,
           'pixels_ev_to_bottom': self.config.lidar_resolution_height / 2.0 * 4,
           # 'pixels_per_meter': self.config.pixels_per_meter * 4,
-          'pixels_per_meter': self.config.pixels_per_meter * 2,
+          'pixels_per_meter': 2, #self.config.pixels_per_meter,
           'history_idx': [-1],
           'scale_bbox': True,
           'scale_mask_col': 1.0,
-          'map_folder': 'maps_8ppm_cv'
+          'map_folder': 'maps_2ppm_cv'
           # 'map_folder': 'maps'
       }
       self._vehicle = CarlaDataProvider.get_hero_actor()

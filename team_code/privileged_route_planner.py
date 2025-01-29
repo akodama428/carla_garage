@@ -738,7 +738,7 @@ class PrivilegedRoutePlanner(object):
     map_name = carla_map.name.split("/")[-1]
 
     # Load speed limit data from file
-    file_name_speed_limits = f"/home/atsushi/carla_garage/team_code/speed_limits/{map_name}_speed_limits.npy"
+    file_name_speed_limits = f"/mnt/ssd/carla_garage/team_code/speed_limits/{map_name}_speed_limits.npy"
     file_content = np.load(file_name_speed_limits, allow_pickle=True)
     map_data = file_content.item()
 

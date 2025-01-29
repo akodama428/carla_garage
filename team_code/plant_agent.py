@@ -205,6 +205,9 @@ class PlanTAgent(DataAgent):
         pred_target_speed_index = torch.argmax(pred_target_speed)
         pred_target_speed = self.config.target_speeds[pred_target_speed_index]
 
+    # print(f"self.config.inference_direct_controller: {self.config.inference_direct_controller}")
+    # print(f"self.config.use_controller_input_prediction: {self.config.use_controller_input_prediction}")
+
     if self.config.inference_direct_controller and \
         self.config.use_controller_input_prediction:
       pred_checkpoints = torch.stack(pred_checkpoints, dim=0).mean(dim=0).detach().cpu().numpy()

@@ -91,6 +91,7 @@ class MapImage(object):
     topology = [x[0] for x in carla_map_local.get_topology()]
     topology = sorted(topology, key=lambda w: w.transform.location.z)
 
+    print("Draw Shoulders, Parkings and Sidewalks")
     for waypoint in tqdm(topology):
       waypoints = [waypoint]
       # Generate waypoints of a road id. Stop when road id differs
@@ -151,14 +152,26 @@ class MapImage(object):
                                                world_offset)
 
     # stoplines
-    stopline_surface = np.zeros((width_in_pixels, width_in_pixels))
+    print("Draw stoplines")
+    print(f"width_in_pixels: {width_in_pixels}")
+    stopline_surface = np.zeros((width_in_pixels, width_in_pixels), dtype=np.uint8)
+
+    if not TrafficLightHandler.list_stopline_vtx:
+      print("No stoplines found!")
+      return  # 処理を中断
 
     for stopline_vertices in TrafficLightHandler.list_stopline_vtx:
       for loc_left, loc_right in stopline_vertices:
+        print(f"Left: {loc_left}, Right: {loc_right}")
         stopline_points = [
             MapImage.world_to_pixel(loc_left, pixels_per_meter_local, world_offset),
             MapImage.world_to_pixel(loc_right, pixels_per_meter_local, world_offset)
         ]
+        print(f"Stopline points: {stopline_points}")
+        # 範囲外チェック
+        if any(p[0] < 0 or p[1] < 0 or p[0] >= width_in_pixels or p[1] >= width_in_pixels for p in stopline_points):
+            print(f"Skipping out-of-bounds stopline: {stopline_points}")
+            continue  # 範囲外の場合はスキップ
         MapImage.draw_line(stopline_surface, stopline_points, 2)
 
     # np.uint8 mask
@@ -304,12 +317,12 @@ class MapImage(object):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument('--save_dir', default='carla_gym/core/obs_manager/birdview/maps')
-  parser.add_argument('--pixels_per_meter', type=float, default=2.0)
-  parser.add_argument('--carla_sh_path', default='/home/ubuntu/apps/carla/carla994/CarlaUE4.sh')
+  parser.add_argument('--save_dir', default='/mnt/ssd/carla_garage/team_code/birds_eye_view/maps_8ppm_cv')
+  parser.add_argument('--pixels_per_meter', type=float, default=8.0)
+  parser.add_argument('--carla_sh_path', default='/mnt/ssd/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20/CarlaUE4.sh')
   parser.add_argument('--carla_root',
                       type=str,
-                      default=r'/home/jaeger/ordnung/internal/carla_9_15',
+                      default=r'/mnt/ssd/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20',
                       help='folder containing carla')
   parser.add_argument('--gpu_id', default=0, type=int, help='id to run the carla server on')
 
@@ -349,8 +362,7 @@ if __name__ == '__main__':
   )
   client.get_world().apply_settings(settings)
   map_names = [
-      'Town01', 'Town02', 'Town03', 'Town04', 'Town05', 'Town06', 'Town07', 'Town10HD', 'Town11', 'Town12', 'Town13',
-      'Town15'
+      'Town12'
   ]
   for carla_map in map_names:
     hf_file_path = save_dir / (carla_map + '.h5')
@@ -370,6 +382,7 @@ if __name__ == '__main__':
     dict_masks = MapImage.draw_map_image(world.get_map(), pixels_per_meter)
 
     with h5py.File(hf_file_path, 'w') as hf:
+      print("create_dataset")
       hf.attrs['pixels_per_meter'] = pixels_per_meter
       hf.attrs['world_offset_in_meters'] = dict_masks['world_offset']
       hf.attrs['width_in_meters'] = dict_masks['width_in_meters']
@@ -396,6 +409,7 @@ if __name__ == '__main__':
                         data=dict_masks['lane_marking_white_solid'],
                         compression='gzip',
                         compression_opts=9)
+    print("H5 file written successfully.")
 
   kill(carla_servers[0].pid)
   print('Done generating routes.')

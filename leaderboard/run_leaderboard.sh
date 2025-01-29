@@ -1,31 +1,32 @@
  #!/bin/bash
 
-export CARLA_ROOT="/home/atsushi/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20"
-export WORK_DIR="/home/atsushi/carla_garage"
+export CARLA_ROOT="/mnt/ssd/DriveLM/pdm_lite/carla/CARLA_Leaderboard_20"
+export WORK_DIR="/mnt/ssd/carla_garage"
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI
 export PYTHONPATH=$PYTHONPATH:${CARLA_ROOT}/PythonAPI/carla
 export SCENARIO_RUNNER_ROOT=${WORK_DIR}/scenario_runner
 export LEADERBOARD_ROOT=${WORK_DIR}/leaderboard
 export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${LEADERBOARD_ROOT}":${PYTHONPATH}
 
-# export TEAM_AGENT="/home/atsushi/carla_garage/team_code/data_agent.py"
-# export TEAM_AGENT="/home/atsushi/carla_garage/team_code/sensor_agent.py"
-export TEAM_AGENT="/home/atsushi/carla_garage/team_code/plant_agent.py"
-export TEAM_CONFIG="/home/atsushi/carla_garage/team_code/pretrained_models/all_towns"
+# export TEAM_AGENT="/mnt/ssd/carla_garage/team_code/data_agent.py"
+# export TEAM_AGENT="/mnt/ssd/carla_garage/team_code/sensor_agent.py"
+export TEAM_AGENT="/mnt/ssd/carla_garage/team_code/plant_agent.py"
+export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/train_id_006_plant_all_scenario_with_model"
 
-# export ROUTES=$LEADERBOARD_ROOT/data/routes_devtest.xml
+# export ROUTES=$LEADERBOARD_ROOT/data/routes_devtest.xml  # Town12は地図が大きく、メモリ容量を超えるので、plant.pyで地図の設定変更必要
+# export ROUTES=$LEADERBOARD_ROOT/data/bench2drive220.xml  # bench2driveは、起動時にエラー発生する（next_traffic_light.stateが設定されていない？）
 export ROUTES=$LEADERBOARD_ROOT/data/longest6.xml
 export ROUTES_SUBSET=0
 export REPETITIONS=1
 export REPETITION=0
-# export DIRECT=1
+export DIRECT=1
 
-export DEBUG_CHALLENGE=1
+export DEBUG_CHALLENGE=1  # ここ０にしないとroutes_devtestはまわらないかも
 export VISU_PLANT=1
 export CHALLENGE_TRACK_CODENAME=MAP
 export CHECKPOINT_ENDPOINT="${LEADERBOARD_ROOT}/results.json"
-export RECORD_PATH="/home/atsushi/carla_garage/logs"
-export SAVE_PATH="/home/atsushi/carla_garage/logs"
+export RECORD_PATH="/mnt/ssd/carla_garage/logs"
+export SAVE_PATH="/mnt/ssd/carla_garage/logs"
 export RESUME=0
 
 export TOWN=Town12

@@ -74,6 +74,8 @@ class LateralPIDController(object):
     n_lookahead = int(min(n_lookahead, route_np.shape[0] -
                           1))  # range [0, 8] - but 0 and 1 are never used because n_lookahead is overwritten below
 
+    print(f"speed_offset:{self.speed_offset}, n_lookahead:{n_lookahead}")
+
     n_lookahead = min(n_lookahead, len(route_np) - 1)
     desired_heading_vec = route_np[n_lookahead] - ego_vehicle_location
 
