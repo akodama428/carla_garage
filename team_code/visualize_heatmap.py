@@ -5,6 +5,8 @@ This script is used to visualize the dataset and merge RGB, LiDAR and BEV views 
 from copy import deepcopy
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
+import os
 import cv2
 from PIL import Image
 from data import CARLA_Data
@@ -169,45 +171,146 @@ def visualize_model(
   Path(store_path).parent.mkdir(parents=True, exist_ok=True)
   all_images.save(store_path)
 
+def plot_pred_checkpoint_heatmap(checkpoints_x, checkpoints_y, save_path=None, x_range=None, y_range=None):
+    """
+    pred_checkpoint のヒートマップを描画する関数
+
+    Parameters:
+        checkpoints_x (list): x座標のリスト
+        checkpoints_y (list): y座標のリスト
+        save_path (str, optional): ヒートマップ画像を保存するパス
+        x_range (tuple, optional): x座標のレンジ (min, max)
+        y_range (tuple, optional): y座標のレンジ (min, max)
+    """
+    # ヒートマップを作成
+    heatmap, xedges, yedges = np.histogram2d(checkpoints_x, checkpoints_y, bins=100,  range=[x_range, y_range])
+
+    # ヒートマップデータのマスキング (値がゼロの部分をマスク)
+    masked_heatmap = np.ma.masked_where(heatmap == 0, heatmap)
+
+    # プロット
+    fig, ax = plt.subplots(figsize=(10, 8))
+    im = ax.imshow(
+        heatmap.T,
+        origin="lower",
+        extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]],
+        cmap="hot",
+        aspect="auto",
+    )
+
+    plt.colorbar(im, ax=ax, label="Frequency")
+    ax.set_title("Predicted Checkpoints Heatmap")
+    ax.set_xlabel("X Coordinate")
+    ax.set_ylabel("Y Coordinate")
+
+    # x_range と y_range を設定
+    if x_range:
+        ax.set_xlim(x_range)
+    if y_range:
+        ax.set_ylim(y_range)
+
+    # 保存または表示
+    if save_path:
+        plt.savefig(save_path, dpi=100)
+    plt.close()
 
 if __name__ == '__main__':
   device = 'cpu'
 
   # the source path should be one level in the directory hierarchy above the folder(s) that contain the actual rgb, lidar, ... folders
   # aka the SAVE_PATH from start_autopilot.sh
-  source_path = ['/mnt/ssd/carla_garage/data_selected/VehicleTurningRoutePedestrian']
-  save_path = '/mnt/ssd/carla_garage/logs/vis_dataset'
-
+  root_folder = '/mnt/ssd/carla_garage/data_selected'  # ルートフォルダ
+  save_folder = '/mnt/ssd/carla_garage/logs/dataset_heatmap'  # 保存先フォルダ
   config = GlobalConfig()
-  print('Loading data')
-  train_set = CARLA_Data(root=source_path, config=config)
+  size_width = int((config.max_y - config.min_y) * config.pixels_per_meter)
+  size_height = int((config.max_x - config.min_x) * config.pixels_per_meter)
+  scale_factor = 4
+  origin_x_ratio = config.max_x / (config.max_x - config.min_x) if config.crop_bev and config.crop_bev_height_only_from_behind else 1
+  origin = ((size_width * scale_factor) // 2, (origin_x_ratio * size_height * scale_factor) // 2)
+  loc_pixels_per_meter = config.pixels_per_meter * scale_factor
 
-  dataloader_train = DataLoader(train_set)
+  # サブフォルダを取得
+  scenario_folders = [os.path.join(root_folder, d) for d in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, d))]
+  # 全シナリオヒートマップ用の座標リスト
+  all_checkpoints_x = []
+  all_checkpoints_y = []
 
-  for i, data in enumerate(dataloader_train):  #enumerate(tqdm(dataloader_train, disable=rank != 0)):
-    #if i % 10 == 0:
-    print('+++++++++ ' + str(i) + ' +++++++++')
-    # print(f"data:{data}")
-    rgb = data['rgb'].to(device, dtype=torch.float32)
-    bev_semantic_label = data['bev_semantic'].to(device, dtype=torch.long)
-    depth_label = data['depth'].to(device, dtype=torch.float32)
-    lidar = data['lidar'].to(device, dtype=torch.float32)
-    target_point = data['target_point'].to(device, dtype=torch.float32)
-    target_point_next = data['target_point_next'].to(device, dtype=torch.float32)
-    bbs = data['bounding_boxes'].to(device, dtype=torch.float32)
-    gt_speed = data['speed'].to(device, dtype=torch.float32)
-    target_speed_twohot = data['target_speed_twohot'].to(device, dtype=torch.float32)
-    checkpoint = data['route'][:, :20].to(device, dtype=torch.float32)
+  for scenario_path in scenario_folders:
+    scenario_name = os.path.basename(scenario_path)
+    print(f'Processing scenario: {scenario_name}')
+    # シナリオごとに保存フォルダを作成
+    scenario_save_path = os.path.join(save_folder, scenario_name)
+    os.makedirs(scenario_save_path, exist_ok=True)
 
-    visualize_model(config=config,
-                    step=i,
-                    save_path=save_path,
-                    rgb=rgb,
-                    lidar_bev=lidar,
-                    target_point=target_point,
-                    target_point_next=target_point_next,
-                    gt_wp=None,
-                    gt_bbs=bbs,
-                    gt_speed=gt_speed,
-                    pred_checkpoint=checkpoint,
-                    gt_bev_semantic=bev_semantic_label)
+    # 出力ファイルが存在する場合はスキップ
+    final_x_file = f"{scenario_save_path}/{scenario_name}_checkpoints_x.npy"
+    final_y_file = f"{scenario_save_path}/{scenario_name}_checkpoints_y.npy"
+    if os.path.exists(final_x_file) and os.path.exists(final_y_file):
+        print(f"Skipping scenario {scenario_name} as data already exists.")
+        continue
+
+    print('Loading data')
+    train_set = CARLA_Data(root=[scenario_path], config=config)
+    dataloader_train = DataLoader(train_set)
+  
+    # ヒートマップ用の座標リスト
+    scenario_checkpoints_x = []
+    scenario_checkpoints_y = []
+
+    for i, data in enumerate(dataloader_train):  #enumerate(tqdm(dataloader_train, disable=rank != 0)):
+      if i % 1000 == 0:
+        print('+++++++++ ' + str(i) + ' +++++++++')
+      # print(f"data:{data}")
+      # rgb = data['rgb'].to(device, dtype=torch.float32)
+      # bev_semantic_label = data['bev_semantic'].to(device, dtype=torch.long)
+      # depth_label = data['depth'].to(device, dtype=torch.float32)
+      # lidar = data['lidar'].to(device, dtype=torch.float32)
+      # target_point = data['target_point'].to(device, dtype=torch.float32)
+      # target_point_next = data['target_point_next'].to(device, dtype=torch.float32)
+      # bbs = data['bounding_boxes'].to(device, dtype=torch.float32)
+      # gt_speed = data['speed'].to(device, dtype=torch.float32)
+      # target_speed_twohot = data['target_speed_twohot'].to(device, dtype=torch.float32)
+      checkpoint = data['route'][:, :20].to(device, dtype=torch.float32)
+
+      # visualize_model(config=config,
+      #                 step=i,
+      #                 save_path=save_path,
+      #                 rgb=rgb,
+      #                 lidar_bev=lidar,
+      #                 target_point=target_point,
+      #                 target_point_next=target_point_next,
+      #                 gt_wp=None,
+      #                 gt_bbs=bbs,
+      #                 gt_speed=gt_speed,
+      #                 pred_checkpoint=checkpoint,
+      #                 gt_bev_semantic=bev_semantic_label)
+
+      # 変換
+      for wp in checkpoint.detach().cpu().numpy()[0]:
+        wp_x = wp[0] * loc_pixels_per_meter + origin[0]
+        wp_y = wp[1] * loc_pixels_per_meter + origin[1]
+        scenario_checkpoints_x.append(wp_x)
+        scenario_checkpoints_y.append(wp_y)
+
+      # 指定した間隔でリストを保存
+      if (i + 1) % 10000 == 0 and i > 0:
+        np.save(f"{scenario_save_path}/{scenario_name}_checkpoints_x_step_{i}.npy", np.array(scenario_checkpoints_x))
+        np.save(f"{scenario_save_path}/{scenario_name}_checkpoints_y_step_{i}.npy", np.array(scenario_checkpoints_y))
+        print(f"Saved interim data at step {i}")
+        # ヒートマップを出力
+        heatmap_save_path = f"{scenario_save_path}/{scenario_name}_heatmap_{i}.png"
+        plot_pred_checkpoint_heatmap(scenario_checkpoints_y, scenario_checkpoints_x, save_path=heatmap_save_path, x_range=(300, 700), y_range=(550, 850))
+        # リストを初期化（処理落ち対策）
+        scenario_checkpoints_x = []
+        scenario_checkpoints_y = []
+
+    # 最終的なデータを保存
+    np.save(final_x_file, np.array(scenario_checkpoints_x))
+    np.save(final_y_file, np.array(scenario_checkpoints_y))
+
+    # # 全シナリオのヒートマップを更新
+    # all_checkpoints_x.extend(scenario_checkpoints_x)
+    # all_checkpoints_y.extend(scenario_checkpoints_y)
+    # # 全シナリオヒートマップを保存
+    # global_heatmap_path = os.path.join(save_folder, "global_heatmap.png")
+    # plot_pred_checkpoint_heatmap(all_checkpoints_y, all_checkpoints_x, save_path=global_heatmap_path, x_range=(300, 700), y_range=(550, 850))
