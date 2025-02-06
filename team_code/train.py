@@ -545,7 +545,7 @@ def main():
       start_epoch = int(''.join(filter(str.isdigit, load_name))) + 1
     model.load_state_dict(torch.load(args.load_file, map_location=device), strict=False)
 
-  # print(f"config.freeze_backbone:{config.freeze_backbone}")
+  print(f"config.freeze_backbone:{config.freeze_backbone}")
 
   if config.freeze_backbone:
     model.backbone.requires_grad_(False)
