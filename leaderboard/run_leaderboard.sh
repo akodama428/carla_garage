@@ -10,9 +10,12 @@ export PYTHONPATH="${CARLA_ROOT}/PythonAPI/carla/":"${SCENARIO_RUNNER_ROOT}":"${
 
 # export TEAM_AGENT=$LEADERBOARD_ROOT/leaderboard/autoagents/human_agent.py
 export TEAM_AGENT="/mnt/ssd/carla_garage/team_code/sensor_agent.py"
-export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/tf_10scenario"
+export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/original"
+# export TEAM_CONFIG="/mnt/ssd/carla_garage/team_code/model/tf_mod_mplcomp_all_scenario_sampler_mod"
 
-export ROUTES=$LEADERBOARD_ROOT/data/routes_devtest.xml
+# export ROUTES=$LEADERBOARD_ROOT/data/routes_devtest.xml
+# export ROUTES=$LEADERBOARD_ROOT/data/longest6_split/longest6_00.xml
+export ROUTES=/mnt/ssd/carla_garage/Bench2Drive/leaderboard/data/bench2drive220_0_tfpp_traj.xml
 export ROUTES_SUBSET=0
 export REPETITIONS=1
 
